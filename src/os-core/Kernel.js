@@ -79,6 +79,11 @@ class Kernel {
   }
 
   route(input, context) {
+    // If ManagerAgent is registered, it handles the orchestration
+    if (this.agents.has("ManagerAgent")) {
+      return "ManagerAgent";
+    }
+
     const text = (input.text || (input.messages && input.messages[input.messages.length - 1].content) || "").toLowerCase();
     
     if (this.agents.has("SalesAgent") && (text.includes("demo") || text.includes("sales") || text.includes("contact"))) {

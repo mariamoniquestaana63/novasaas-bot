@@ -12,6 +12,7 @@ const Blackboard = require("./src/os-core/Blackboard");
 const MCPToolGateway = require("./src/tools/MCPToolGateway");
 const SupportAgent = require("./src/agents/SupportAgent");
 const SalesAgent = require("./src/agents/SalesAgent");
+const ManagerAgent = require("./src/agents/ManagerAgent");
 
 const app = express();
 app.use(cors({ origin: process.env.FRONTEND_URL || "*" }));
@@ -44,6 +45,7 @@ kernel.setBlackboard(blackboard);
 kernel.setToolGateway(toolGateway);
 kernel.registerAgent(new SupportAgent());
 kernel.registerAgent(new SalesAgent());
+kernel.registerAgent(new ManagerAgent());
 
 // ── POST /api/chat ────────────────────────────────────────────────────────────
 app.post("/api/chat", async (req, res) => {
