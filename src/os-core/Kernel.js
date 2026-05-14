@@ -6,11 +6,16 @@ class Kernel {
     this.agents = new Map();
     this.blackboard = new Map(); 
     this.ai = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    this.contextBroker = config.contextBroker || null;
   }
 
   registerAgent(agent) {
     this.agents.set(agent.name, agent);
     console.log(`[Kernel] Registered agent: ${agent.name} (${agent.role})`);
+  }
+
+  setContextBroker(broker) {
+    this.contextBroker = broker;
   }
 
   // LLM Engine Abstraction
@@ -38,6 +43,21 @@ class Kernel {
     const text = input.text || (input.messages && input.messages[input.messages.length-1].content) || "";
     console.log(`[Kernel] Dispatching input: "${text.substring(0, 50)}..."`);
     
+    // Enrich with context if broker and session_id exist
+    if (this.contextBroker && sessionContext.session_id) {
+      console.log(`[Kernel] Enriching input with context for session ${sessionContext.session_id}`);
+      const history = await this.contextBroker.getContext(sessionContext.session_id, text);
+      
+      if (input.messages) {
+        // Simple merge: history + current message(s)
+        const currentMessages = input.messages;
+        // Avoid duplicate of the last message if already in history (though usually it's not)
+        input.messages = [...history, ...currentMessages.filter(m => !history.some(h => h.content === m.content && h.role === m.role))];
+      } else {
+        input.messages = [...history, { role: 'user', content: text }];
+      }
+    }
+
     const agentName = this.route(input, sessionContext);
     const agent = this.agents.get(agentName);
     
