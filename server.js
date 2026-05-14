@@ -1,15 +1,24 @@
-// server.js — NovaSaaS Support Bot + Supabase
-// npm install express cors @anthropic-ai/sdk @supabase/supabase-js dotenv
-
+// server.js — NovaSaaS AI OS (Kernel-based)
 const express = require("express");
 const cors = require("cors");
-const Anthropic = require("@anthropic-ai/sdk");
 const { createClient } = require("@supabase/supabase-js");
+const ws = require("ws");
 require("dotenv").config();
 
+// AI OS Core
+const Kernel = require("./src/os-core/Kernel");
+const SupportAgent = require("./src/agents/SupportAgent");
+const SalesAgent = require("./src/agents/SalesAgent");
+
 const app = express();
-const ai = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const ws = require("ws");
+app.use(cors({ origin: process.env.FRONTEND_URL || "*" }));
+app.use(express.json());
+
+// Initialize Kernel and Agents
+const kernel = new Kernel();
+kernel.registerAgent(new SupportAgent());
+kernel.registerAgent(new SalesAgent());
+
 const db = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY,
@@ -17,26 +26,6 @@ const db = createClient(
     realtime: { transport: ws }
   }
 );
-app.use(cors({ origin: process.env.FRONTEND_URL || "*" }));
-app.use(express.json());
-
-// ── System Prompt ─────────────────────────────────────────────────────────────
-const SYSTEM_PROMPT = `
-You are Aria, a professional customer support agent for NovaSaaS — a CRM & Sales platform.
-
-KNOWLEDGE BASE:
-- Starter: $29/month — 3 users, 1,000 contacts
-- Pro: $79/month — 15 users, 50,000 contacts, API access, priority support
-- Enterprise: Custom pricing — unlimited everything, SSO, dedicated manager
-- Free 14-day trial. Annual billing saves 20%.
-- Password reset: novasaas.com/login → "Forgot password"
-- Billing issues: check spam for receipt; escalate to support@novasaas.com
-- Export: Settings → Data → Export
-- Support: support@novasaas.com | help.novasaas.com
-
-ESCALATION: If user is frustrated, angry, mentions refunds, data loss, or asks for a human — end with [COLLECT_EMAIL]. Only once per conversation.
-TONE: Professional, formal, empathetic. Concise structured responses.
-`;
 
 // ── POST /api/chat ────────────────────────────────────────────────────────────
 app.post("/api/chat", async (req, res) => {
@@ -47,28 +36,23 @@ app.post("/api/chat", async (req, res) => {
   }
 
   try {
-    // 1. Get AI reply
-    const response = await ai.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      messages,
-    });
+    // Dispatch to AI OS Kernel
+    const result = await kernel.dispatch({ messages }, { session_id });
+    
+    const reply = result.reply;
 
-    const reply = response.content[0].text;
-
-    // 2. Save the latest user message + reply to chat_logs
+    // Save the latest user message + reply to chat_logs
     const lastUserMsg = messages[messages.length - 1];
     await db.from("chat_logs").insert([
       { session_id, role: "user", content: lastUserMsg.content },
       { session_id, role: "assistant", content: reply },
     ]);
 
-    res.json({ reply });
+    res.json({ reply, agent: result.agent });
 
   } catch (err) {
-    console.error("Chat error:", err.message);
-    res.status(500).json({ error: "AI service error. Please try again." });
+    console.error("Kernel Dispatch error:", err.message);
+    res.status(500).json({ error: "AI OS error. Please try again." });
   }
 });
 
@@ -82,12 +66,8 @@ app.post("/api/leads", async (req, res) => {
 
   try {
     const { error } = await db.from("leads").insert([{ name, email, session_id }]);
-
     if (error) throw error;
-
-    console.log(`📧 Lead saved: ${name} <${email}>`);
     res.json({ success: true });
-
   } catch (err) {
     console.error("Lead error:", err.message);
     res.status(500).json({ error: "Could not save lead." });
@@ -95,7 +75,6 @@ app.post("/api/leads", async (req, res) => {
 });
 
 // ── GET /api/leads ────────────────────────────────────────────────────────────
-// Protected admin endpoint — add auth middleware in production
 app.get("/api/leads", async (req, res) => {
   const { data, error } = await db
     .from("leads")
@@ -106,6 +85,5 @@ app.get("/api/leads", async (req, res) => {
   res.json({ leads: data });
 });
 
-// ── Start ─────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`✅ Server running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`✅ AI OS Server running on port ${PORT}`));
