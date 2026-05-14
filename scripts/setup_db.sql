@@ -49,3 +49,23 @@ BEGIN
   LIMIT match_count;
 END;
 $$;
+
+-- 5. Create the blackboard_entries table for Agent IPC
+CREATE TABLE IF NOT EXISTS blackboard_entries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  parent_id UUID REFERENCES blackboard_entries(id),
+  session_id TEXT NOT NULL,
+  agent_id TEXT NOT NULL,
+  type TEXT NOT NULL, -- observation, hypothesis, plan, fact, result, error
+  layer TEXT NOT NULL, -- strategy, logic, perception, action
+  payload JSONB NOT NULL,
+  confidence FLOAT,
+  tags TEXT[],
+  status TEXT DEFAULT 'active', -- active, processed, stale, archived
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexing for performance
+CREATE INDEX IF NOT EXISTS idx_blackboard_session ON blackboard_entries(session_id);
+CREATE INDEX IF NOT EXISTS idx_blackboard_type_status ON blackboard_entries(type, status);
+
