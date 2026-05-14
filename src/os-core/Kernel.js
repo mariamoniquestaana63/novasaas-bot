@@ -4,9 +4,10 @@ class Kernel {
   constructor(config = {}) {
     this.config = config;
     this.agents = new Map();
-    this.blackboard = new Map(); 
+    this.blackboard = config.blackboard || null; 
     this.ai = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     this.contextBroker = config.contextBroker || null;
+    this.toolGateway = config.toolGateway || null;
   }
 
   registerAgent(agent) {
@@ -16,6 +17,14 @@ class Kernel {
 
   setContextBroker(broker) {
     this.contextBroker = broker;
+  }
+
+  setBlackboard(blackboard) {
+    this.blackboard = blackboard;
+  }
+
+  setToolGateway(gateway) {
+    this.toolGateway = gateway;
   }
 
   // LLM Engine Abstraction

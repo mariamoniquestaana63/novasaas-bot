@@ -8,6 +8,8 @@ require("dotenv").config();
 // AI OS Core
 const Kernel = require("./src/os-core/Kernel");
 const ContextBroker = require("./src/os-core/ContextBroker");
+const Blackboard = require("./src/os-core/Blackboard");
+const MCPToolGateway = require("./src/tools/MCPToolGateway");
 const SupportAgent = require("./src/agents/SupportAgent");
 const SalesAgent = require("./src/agents/SalesAgent");
 
@@ -29,9 +31,17 @@ const contextBroker = new ContextBroker(db, {
   maxContextMessages: 10
 });
 
+// Initialize Blackboard
+const blackboard = new Blackboard(db);
+
+// Initialize MCP Tool Gateway
+const toolGateway = new MCPToolGateway();
+
 // Initialize Kernel and Agents
 const kernel = new Kernel();
 kernel.setContextBroker(contextBroker);
+kernel.setBlackboard(blackboard);
+kernel.setToolGateway(toolGateway);
 kernel.registerAgent(new SupportAgent());
 kernel.registerAgent(new SalesAgent());
 
