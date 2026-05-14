@@ -7,6 +7,7 @@ require("dotenv").config();
 
 // AI OS Core
 const Kernel = require("./src/os-core/Kernel");
+const ContextBroker = require("./src/os-core/ContextBroker");
 const SupportAgent = require("./src/agents/SupportAgent");
 const SalesAgent = require("./src/agents/SalesAgent");
 
@@ -14,11 +15,7 @@ const app = express();
 app.use(cors({ origin: process.env.FRONTEND_URL || "*" }));
 app.use(express.json());
 
-// Initialize Kernel and Agents
-const kernel = new Kernel();
-kernel.registerAgent(new SupportAgent());
-kernel.registerAgent(new SalesAgent());
-
+// Initialize Supabase Client
 const db = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY,
@@ -26,6 +23,17 @@ const db = createClient(
     realtime: { transport: ws }
   }
 );
+
+// Initialize Context Broker
+const contextBroker = new ContextBroker(db, {
+  maxContextMessages: 10
+});
+
+// Initialize Kernel and Agents
+const kernel = new Kernel();
+kernel.setContextBroker(contextBroker);
+kernel.registerAgent(new SupportAgent());
+kernel.registerAgent(new SalesAgent());
 
 // ── POST /api/chat ────────────────────────────────────────────────────────────
 app.post("/api/chat", async (req, res) => {
@@ -36,17 +44,14 @@ app.post("/api/chat", async (req, res) => {
   }
 
   try {
-    // Dispatch to AI OS Kernel
+    // 1. Dispatch to AI OS Kernel (Kernel now handles context enrichment via Broker)
     const result = await kernel.dispatch({ messages }, { session_id });
-    
     const reply = result.reply;
 
-    // Save the latest user message + reply to chat_logs
+    // 2. Save the latest user message + reply via Context Broker
     const lastUserMsg = messages[messages.length - 1];
-    await db.from("chat_logs").insert([
-      { session_id, role: "user", content: lastUserMsg.content },
-      { session_id, role: "assistant", content: reply },
-    ]);
+    await contextBroker.saveMessage(session_id, "user", lastUserMsg.content);
+    await contextBroker.saveMessage(session_id, "assistant", reply);
 
     res.json({ reply, agent: result.agent });
 
