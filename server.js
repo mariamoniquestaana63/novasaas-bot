@@ -46,6 +46,7 @@ kernel.setToolGateway(toolGateway);
 kernel.registerAgent(new SupportAgent());
 kernel.registerAgent(new SalesAgent());
 kernel.registerAgent(new ManagerAgent());
+kernel.startEventLoop();
 
 // ── POST /api/chat ────────────────────────────────────────────────────────────
 app.post("/api/chat", async (req, res) => {
