@@ -6,42 +6,39 @@ const API = import.meta.env.VITE_API_URL ?? "/api";
 
 const PLANS = [
   {
-    id: "free",
-    name: "Free",
-    monthly: 0,
-    yearly: 0,
-    desc: "Get started with basic market data.",
+    id: "starter",
+    name: "Starter",
+    price: 29,
+    desc: "Live market data for individual traders.",
     features: [
-      { text: "2 pairs (BTC, ETH)", included: true },
-      { text: "Simulated price data", included: true },
-      { text: "Landing page only", included: true },
-      { text: "Live WebSocket feed", included: false },
-      { text: "Full terminal dashboard", included: false },
+      { text: "4 pairs real-time", included: true },
+      { text: "Live Binance WebSocket", included: true },
+      { text: "Terminal dashboard", included: true },
+      { text: "14-day free trial", included: true },
+      { text: "Advanced order book", included: false },
       { text: "API access", included: false },
     ],
   },
   {
     id: "pro",
     name: "Pro",
-    monthly: 29,
-    yearly: 23,
+    price: 79,
     desc: "Full terminal access for active traders.",
     featured: true,
     features: [
-      { text: "6 pairs real-time", included: true },
+      { text: "All 6 pairs real-time", included: true },
       { text: "Live Binance WebSocket", included: true },
-      { text: "Full terminal dashboard", included: true },
+      { text: "Advanced order book", included: true },
       { text: "14-day free trial", included: true },
       { text: "Priority support", included: true },
-      { text: "Custom data feeds", included: false },
+      { text: "API access", included: false },
     ],
   },
   {
-    id: "enterprise",
-    name: "Enterprise",
-    monthly: 99,
-    yearly: 79,
-    desc: "Unlimited pairs, custom feeds, SLA.",
+    id: "elite",
+    name: "Elite",
+    price: 199,
+    desc: "Unlimited data, API access, and SLA.",
     features: [
       { text: "Unlimited pairs", included: true },
       { text: "Custom WebSocket feeds", included: true },
@@ -54,7 +51,6 @@ const PLANS = [
 ];
 
 export default function PricingPage() {
-  const [annual, setAnnual] = useState(false);
   const [loading, setLoading] = useState(null);
   const { user, session, plan: currentPlan, isActive } = useAuth();
   const navigate = useNavigate();
@@ -70,7 +66,7 @@ export default function PricingPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session?.access_token}`,
         },
-        body: JSON.stringify({ plan: planId, interval: annual ? "year" : "month" }),
+        body: JSON.stringify({ plan: planId }),
       });
       const data = await res.json();
       if (data.url) window.location.href = data.url;
@@ -110,28 +106,12 @@ export default function PricingPage() {
         <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">Simple, honest pricing</h1>
         <p className="text-gray-400 text-sm mb-8">14-day free trial on Pro and Enterprise. No card required.</p>
 
-        {/* Annual toggle */}
-        <div className="inline-flex items-center gap-3 bg-surface2 border border-white/8 rounded-lg p-1">
-          <button
-            onClick={() => setAnnual(false)}
-            className={`px-4 py-1.5 rounded text-xs font-bold transition ${!annual ? "bg-brand text-black" : "text-gray-400"}`}
-          >
-            Monthly
-          </button>
-          <button
-            onClick={() => setAnnual(true)}
-            className={`px-4 py-1.5 rounded text-xs font-bold transition ${annual ? "bg-brand text-black" : "text-gray-400"}`}
-          >
-            Annual
-            <span className="ml-1.5 text-[10px] bg-brand/20 text-brand px-1.5 py-0.5 rounded-full">–20%</span>
-          </button>
-        </div>
+        <p className="text-gray-500 text-xs">All prices in USD · billed monthly · cancel anytime</p>
       </div>
 
       {/* Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
         {PLANS.map((p) => {
-          const price = annual ? p.yearly : p.monthly;
           const isCurrent = isActive && currentPlan === p.id;
 
           return (
@@ -150,18 +130,9 @@ export default function PricingPage() {
               <div className="mb-4">
                 <p className="text-gray-400 text-xs uppercase tracking-widest mb-1">{p.name}</p>
                 <div className="flex items-end gap-1 mb-1">
-                  {price > 0 ? (
-                    <>
-                      <span className="text-4xl font-bold text-white">${price}</span>
-                      <span className="text-gray-500 text-sm mb-1.5">/mo</span>
-                    </>
-                  ) : (
-                    <span className="text-4xl font-bold text-white">Free</span>
-                  )}
+                  <span className="text-4xl font-bold text-white">${p.price}</span>
+                  <span className="text-gray-500 text-sm mb-1.5">/mo</span>
                 </div>
-                {annual && price > 0 && (
-                  <p className="text-brand text-[11px]">Billed ${price * 12}/year</p>
-                )}
                 <p className="text-gray-500 text-xs mt-2">{p.desc}</p>
               </div>
 

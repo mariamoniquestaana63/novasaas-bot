@@ -12,19 +12,14 @@ const db = createClient(
   process.env.SUPABASE_SERVICE_KEY!
 );
 
-// Plans config
-const PLANS: Record<string, { month: string; year: string }> = {
-  pro: {
-    month: process.env.STRIPE_PRICE_PRO_MONTHLY!,
-    year:  process.env.STRIPE_PRICE_PRO_YEARLY!,
-  },
-  enterprise: {
-    month: process.env.STRIPE_PRICE_ENT_MONTHLY!,
-    year:  process.env.STRIPE_PRICE_ENT_YEARLY!,
-  },
+// Plans: starter / pro / elite → single Stripe price ID each
+const PLANS: Record<string, string> = {
+  starter: process.env.STRIPE_PRICE_STARTER!,
+  pro:     process.env.STRIPE_PRICE_PRO!,
+  elite:   process.env.STRIPE_PRICE_ELITE!,
 };
 
-// ── Stripe webhook needs raw body — mount before express.json() ──────────────
+// ── Stripe webhook — raw body, mount before express.json() ───────────────────
 app.post(
   "/webhook",
   express.raw({ type: "application/json" }),
@@ -68,11 +63,12 @@ app.use(cors({ origin: process.env.FRONTEND_URL || "*" }));
 app.use(express.json());
 
 // ── Auth middleware ───────────────────────────────────────────────────────────
+const anonClient = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
+
 async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   const token = req.headers.authorization?.replace("Bearer ", "");
   if (!token) { res.status(401).json({ error: "Unauthorized" }); return; }
 
-  const anonClient = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
   const { data: { user }, error } = await anonClient.auth.getUser(token);
   if (error || !user) { res.status(401).json({ error: "Invalid token" }); return; }
 
@@ -81,15 +77,18 @@ async function requireAuth(req: Request, res: Response, next: NextFunction): Pro
 }
 
 // ── GET /health ───────────────────────────────────────────────────────────────
-app.get("/health", (_req, res) => res.json({ status: "ok" }));
+app.get("/health", (_req, res) => res.json({ status: "ok", plans: Object.keys(PLANS) }));
 
 // ── POST /checkout ────────────────────────────────────────────────────────────
 app.post("/checkout", requireAuth, async (req: Request, res: Response): Promise<void> => {
-  const { plan, interval = "month" } = req.body as { plan: string; interval?: "month" | "year" };
+  const { plan } = req.body as { plan: string };
   const user = (req as any).user;
 
-  const priceId = PLANS[plan]?.[interval];
-  if (!priceId) { res.status(400).json({ error: `Unknown plan/interval: ${plan}/${interval}` }); return; }
+  const priceId = PLANS[plan];
+  if (!priceId) {
+    res.status(400).json({ error: `Unknown plan: ${plan}. Valid: ${Object.keys(PLANS).join(", ")}` });
+    return;
+  }
 
   const customerId = await getOrCreateCustomer(user.id, user.email);
 
@@ -129,7 +128,7 @@ app.get("/subscription", requireAuth, async (req: Request, res: Response): Promi
   const user = (req as any).user;
   const { data, error } = await db
     .from("subscriptions")
-    .select("status, plan, billing_interval, current_period_end, cancel_at_period_end")
+    .select("status, plan, current_period_end, cancel_at_period_end")
     .eq("user_id", user.id)
     .single();
 
@@ -160,23 +159,21 @@ async function getOrCreateCustomer(userId: string, email: string): Promise<strin
 
 async function upsertSubscription(userId: string, customerId: string, sub: Stripe.Subscription) {
   const priceId = sub.items.data[0]?.price?.id;
-  const plan = Object.entries(PLANS).find(([, v]) => Object.values(v).includes(priceId!))?.[0] ?? "free";
-  const interval = (sub.items.data[0]?.price?.recurring?.interval === "year") ? "year" : "month";
+  const plan = Object.entries(PLANS).find(([, v]) => v === priceId)?.[0] ?? "free";
 
   await db.from("subscriptions").upsert(
     {
-      user_id:               userId,
-      stripe_customer_id:    customerId,
+      user_id:                userId,
+      stripe_customer_id:     customerId,
       stripe_subscription_id: sub.id,
-      status:                sub.status,
+      status:                 sub.status,
       plan,
-      billing_interval:      interval,
-      current_period_end:    new Date(sub.current_period_end * 1000).toISOString(),
-      cancel_at_period_end:  sub.cancel_at_period_end,
+      current_period_end:     new Date(sub.current_period_end * 1000).toISOString(),
+      cancel_at_period_end:   sub.cancel_at_period_end,
     },
     { onConflict: "user_id" }
   );
 }
 
-const PORT = Number(process.env.PORT) || 4000;
+const PORT = Number(process.env.PORT) || 3001;
 app.listen(PORT, () => console.log(`✅ Gravia backend on :${PORT}`));

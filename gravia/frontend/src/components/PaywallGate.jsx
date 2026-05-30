@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/AuthContext";
 
-const PLAN_RANK = { free: 0, pro: 1, enterprise: 2 };
+const PLAN_RANK = { free: 0, starter: 1, pro: 2, elite: 3 };
 
 /**
  * Wraps children with a blurred overlay if the user's plan is below `requiredPlan`.
@@ -11,7 +11,7 @@ const PLAN_RANK = { free: 0, pro: 1, enterprise: 2 };
  *   label         string override for the gate title
  *   blur          number px (default 8)
  */
-export default function PaywallGate({ children, requiredPlan = "pro", label, blur = 8 }) {
+export default function PaywallGate({ children, requiredPlan = "starter", label, blur = 8 }) {
   const { user, plan, isActive } = useAuth();
   const navigate = useNavigate();
 

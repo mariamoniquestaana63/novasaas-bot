@@ -66,13 +66,13 @@ export function AuthProvider({ children }) {
   // Plan access helpers
   const plan = subscription?.plan ?? "free";
   const isActive = subscription?.status === "active" || subscription?.status === "trialing";
-  const isPro = isActive && (plan === "pro" || plan === "enterprise");
-  const isEnterprise = isActive && plan === "enterprise";
+  const isPro = isActive && (plan === "pro" || plan === "elite");
+  const isElite = isActive && plan === "elite";
 
   return (
     <AuthContext.Provider value={{
       user, session, subscription, loading,
-      plan, isActive, isPro, isEnterprise,
+      plan, isActive, isPro, isElite,
       signUp, signIn, signOut,
       refreshSubscription: () => session?.access_token ? fetchSubscription(session.access_token) : null,
     }}>

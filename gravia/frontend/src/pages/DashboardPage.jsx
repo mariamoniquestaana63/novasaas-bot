@@ -100,7 +100,7 @@ function TickerStrip({ feed }) {
 }
 
 export default function DashboardPage() {
-  const { user, session, isPro, isEnterprise, plan, signOut } = useAuth();
+  const { user, session, isPro, isElite, plan, signOut } = useAuth();
   const navigate = useNavigate();
   const feed = useBinanceFeed();
   const [activeTab, setActiveTab] = useState("market");
@@ -330,7 +330,7 @@ export default function DashboardPage() {
 
         {/* ── API tab ── */}
         {activeTab === "api" && (
-          <PaywallGate requiredPlan="enterprise" label="Enterprise API Access" blur={6}>
+          <PaywallGate requiredPlan="elite" label="Elite API Access" blur={6}>
             <div className="bg-surface2 border border-white/5 rounded-lg p-5 max-w-2xl">
               <p className="text-gray-400 font-bold mb-4">API Reference</p>
               <div className="space-y-4 text-[11px]">
