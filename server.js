@@ -59,6 +59,9 @@ kernel.registerAgent(new SupportAgent());
 kernel.registerAgent(new SalesAgent());
 kernel.registerAgent(new ManagerAgent());
 
+// ── Health check (used by Railway) ────────────────────────────────────────────
+app.get("/health", (_req, res) => res.json({ status: "ok" }));
+
 // ── Static frontend ───────────────────────────────────────────────────────────
 app.use(express.static("public"));
 
