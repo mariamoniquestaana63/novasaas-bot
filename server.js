@@ -59,6 +59,9 @@ kernel.registerAgent(new SupportAgent());
 kernel.registerAgent(new SalesAgent());
 kernel.registerAgent(new ManagerAgent());
 
+// ── Static frontend ───────────────────────────────────────────────────────────
+app.use(express.static("public"));
+
 // ── Auth & Billing routes ─────────────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
 app.use("/api/billing", billingRoutes);
