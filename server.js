@@ -16,8 +16,18 @@ const SalesAgent = require("./src/agents/SalesAgent");
 const ManagerAgent = require("./src/agents/ManagerAgent");
 const BinanceWebSocket = require("./src/tools/BinanceWebSocket");
 
+// Auth & Billing
+const authRoutes = require("./src/api/auth");
+const billingRoutes = require("./src/api/billing");
+const requireAuth = require("./src/middleware/requireAuth");
+const requireSubscription = require("./src/middleware/requireSubscription");
+
 const app = express();
 app.use(cors({ origin: process.env.FRONTEND_URL || "*" }));
+
+// Stripe webhook needs raw body — mount BEFORE express.json()
+app.use("/api/billing/webhook", express.raw({ type: "application/json" }));
+
 app.use(express.json());
 
 // Initialize Supabase Client
@@ -49,12 +59,16 @@ kernel.registerAgent(new SupportAgent());
 kernel.registerAgent(new SalesAgent());
 kernel.registerAgent(new ManagerAgent());
 
+// ── Auth & Billing routes ─────────────────────────────────────────────────────
+app.use("/api/auth", authRoutes);
+app.use("/api/billing", billingRoutes);
+
 // ── Binance live price feed ───────────────────────────────────────────────────
 const defaultSymbols = (process.env.BINANCE_SYMBOLS || "btcusdt,ethusdt,bnbusdt,solusdt").split(",");
 const binance = new BinanceWebSocket(defaultSymbols);
 
 // ── POST /api/chat ────────────────────────────────────────────────────────────
-app.post("/api/chat", async (req, res) => {
+app.post("/api/chat", requireAuth, requireSubscription, async (req, res) => {
   const { messages, session_id } = req.body;
 
   if (!messages || !Array.isArray(messages) || !session_id) {
