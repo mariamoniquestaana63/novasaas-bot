@@ -60,7 +60,7 @@ export default function PricingPage() {
     if (planId === "free") return;
     setLoading(planId);
     try {
-      const res = await fetch(`${API}/checkout`, {
+      const res = await fetch(`${API}/api/checkout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -75,7 +75,7 @@ export default function PricingPage() {
 
   async function openPortal() {
     if (!user || !session) return;
-    const res = await fetch(`${API}/portal`, {
+    const res = await fetch(`${API}/api/portal`, {
       method: "POST",
       headers: { Authorization: `Bearer ${session.access_token}` },
     });

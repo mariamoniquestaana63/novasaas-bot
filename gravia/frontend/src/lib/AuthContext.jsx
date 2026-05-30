@@ -14,7 +14,7 @@ export function AuthProvider({ children }) {
   // Fetch subscription from backend
   async function fetchSubscription(token) {
     try {
-      const res = await fetch(`${API}/subscription`, {
+      const res = await fetch(`${API}/api/subscription`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) setSubscription(await res.json());

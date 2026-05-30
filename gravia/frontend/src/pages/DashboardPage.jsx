@@ -106,7 +106,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("market");
 
   async function openPortal() {
-    const res = await fetch(`${API}/portal`, {
+    const res = await fetch(`${API}/api/portal`, {
       method: "POST",
       headers: { Authorization: `Bearer ${session?.access_token}` },
     });

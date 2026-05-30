@@ -21,7 +21,7 @@ const PLANS: Record<string, string> = {
 
 // ── Stripe webhook — raw body, mount before express.json() ───────────────────
 app.post(
-  "/webhook",
+  "/api/stripe/webhook",
   express.raw({ type: "application/json" }),
   async (req: Request, res: Response) => {
     const sig = req.headers["stripe-signature"] as string;
@@ -77,10 +77,10 @@ async function requireAuth(req: Request, res: Response, next: NextFunction): Pro
 }
 
 // ── GET /health ───────────────────────────────────────────────────────────────
-app.get("/health", (_req, res) => res.json({ status: "ok", plans: Object.keys(PLANS) }));
+app.get("/api/health", (_req, res) => res.json({ status: "ok", plans: Object.keys(PLANS) }));
 
 // ── POST /checkout ────────────────────────────────────────────────────────────
-app.post("/checkout", requireAuth, async (req: Request, res: Response): Promise<void> => {
+app.post("/api/checkout", requireAuth, async (req: Request, res: Response): Promise<void> => {
   const { plan } = req.body as { plan: string };
   const user = (req as any).user;
 
@@ -110,7 +110,7 @@ app.post("/checkout", requireAuth, async (req: Request, res: Response): Promise<
 });
 
 // ── POST /portal ──────────────────────────────────────────────────────────────
-app.post("/portal", requireAuth, async (req: Request, res: Response): Promise<void> => {
+app.post("/api/portal", requireAuth, async (req: Request, res: Response): Promise<void> => {
   const user = (req as any).user;
   const { data } = await db.from("subscriptions").select("stripe_customer_id").eq("user_id", user.id).single();
   if (!data?.stripe_customer_id) { res.status(404).json({ error: "No billing account" }); return; }
@@ -124,7 +124,7 @@ app.post("/portal", requireAuth, async (req: Request, res: Response): Promise<vo
 });
 
 // ── GET /subscription ─────────────────────────────────────────────────────────
-app.get("/subscription", requireAuth, async (req: Request, res: Response): Promise<void> => {
+app.get("/api/subscription", requireAuth, async (req: Request, res: Response): Promise<void> => {
   const user = (req as any).user;
   const { data, error } = await db
     .from("subscriptions")
@@ -137,7 +137,7 @@ app.get("/subscription", requireAuth, async (req: Request, res: Response): Promi
 });
 
 // ── POST /waitlist ────────────────────────────────────────────────────────────
-app.post("/waitlist", async (req: Request, res: Response): Promise<void> => {
+app.post("/api/waitlist", async (req: Request, res: Response): Promise<void> => {
   const { email } = req.body as { email: string };
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     res.status(400).json({ error: "Valid email required" }); return;

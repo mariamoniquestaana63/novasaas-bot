@@ -46,7 +46,7 @@ export default function LandingPage() {
     if (!email) return;
     setWaitlistState("loading");
     try {
-      const res = await fetch(`${API}/waitlist`, {
+      const res = await fetch(`${API}/api/waitlist`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
