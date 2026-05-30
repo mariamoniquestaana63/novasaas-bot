@@ -2,3 +2,11 @@ node_modules
 .env
 .env.local
 .env.*.local
+
+# Gravia build artifacts
+gravia/backend/dist/
+gravia/frontend/dist/
+gravia/backend/node_modules/
+gravia/frontend/node_modules/
+gravia/backend/.env
+gravia/frontend/.env
