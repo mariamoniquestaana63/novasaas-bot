@@ -97,6 +97,12 @@ describe('POST /api/chat', () => {
     expect(res.status).toBe(400);
   });
 
+  it('returns 400 when messages is an empty array', async () => {
+    const res = await request(app).post('/api/chat').send({ messages: [], session_id: 's1' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/messages/i);
+  });
+
   it('returns 400 when session_id is missing', async () => {
     const res = await request(app)
       .post('/api/chat')

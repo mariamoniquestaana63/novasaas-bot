@@ -37,7 +37,7 @@ function createApp(kernel, contextBroker, db) {
   async function handleChat(req, res) {
     const { messages, session_id } = req.body;
 
-    if (!messages || !Array.isArray(messages) || !session_id) {
+    if (!messages || !Array.isArray(messages) || messages.length === 0 || !session_id) {
       return res.status(400).json({ error: "messages and session_id are required" });
     }
 
