@@ -28,8 +28,13 @@ function createApp(kernel, contextBroker, db) {
   app.use(cors({ origin: process.env.FRONTEND_URL || "*" }));
   app.use(express.json());
 
-  // ── POST /api/chat ──────────────────────────────────────────────────────────
-  app.post("/api/chat", async (req, res) => {
+  /**
+   * Dispatches a chat message through the AI OS Kernel and persists the exchange.
+   * Requires `messages` (array) and `session_id` in the request body.
+   * @param {import('express').Request} req
+   * @param {import('express').Response} res
+   */
+  async function handleChat(req, res) {
     const { messages, session_id } = req.body;
 
     if (!messages || !Array.isArray(messages) || !session_id) {
@@ -49,10 +54,15 @@ function createApp(kernel, contextBroker, db) {
       console.error("Kernel Dispatch error:", err.message);
       res.status(500).json({ error: "AI OS error. Please try again." });
     }
-  });
+  }
 
-  // ── POST /api/leads ─────────────────────────────────────────────────────────
-  app.post("/api/leads", async (req, res) => {
+  /**
+   * Saves a qualified lead (name + email) captured from the chat widget.
+   * Requires `name` and `email` in the request body; `session_id` is optional.
+   * @param {import('express').Request} req
+   * @param {import('express').Response} res
+   */
+  async function handleCreateLead(req, res) {
     const { name, email, session_id } = req.body;
 
     if (!name || !email) {
@@ -67,10 +77,14 @@ function createApp(kernel, contextBroker, db) {
       console.error("Lead error:", err.message);
       res.status(500).json({ error: "Could not save lead." });
     }
-  });
+  }
 
-  // ── GET /api/leads ──────────────────────────────────────────────────────────
-  app.get("/api/leads", async (req, res) => {
+  /**
+   * Returns all captured leads ordered by creation date descending.
+   * @param {import('express').Request} req
+   * @param {import('express').Response} res
+   */
+  async function handleListLeads(req, res) {
     const { data, error } = await db
       .from("leads")
       .select("*")
@@ -78,7 +92,11 @@ function createApp(kernel, contextBroker, db) {
 
     if (error) return res.status(500).json({ error: error.message });
     res.json({ leads: data });
-  });
+  }
+
+  app.post("/api/chat", handleChat);
+  app.post("/api/leads", handleCreateLead);
+  app.get("/api/leads", handleListLeads);
 
   return app;
 }
