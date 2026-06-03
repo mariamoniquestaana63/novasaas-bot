@@ -82,13 +82,16 @@ describe('ContextBroker.getContext', () => {
 
   it('does not prepend memory context when no memories are found', async () => {
     const db = makeDb();
-    db._builder.limit.mockResolvedValueOnce({ data: [], error: null });
+    db._builder.limit.mockResolvedValueOnce({
+      data: [{ role: 'assistant', content: 'existing', created_at: '2024-01-01T00:00:01Z' }],
+      error: null
+    });
 
     const broker = new ContextBroker(db);
     jest.spyOn(broker, 'searchMemories').mockResolvedValue([]);
 
     const ctx = await broker.getContext('sess1', 'query');
-    expect(ctx.every(m => m.role !== 'system')).toBe(true);
+    expect(ctx).toEqual([{ role: 'assistant', content: 'existing' }]);
   });
 });
 

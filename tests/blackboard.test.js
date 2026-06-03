@@ -2,6 +2,12 @@
 
 const Blackboard = require('../src/os-core/Blackboard');
 
+/**
+ * Creates a fresh Supabase-like mock for Blackboard tests.
+ * The channel mock captures the INSERT callback so tests can simulate
+ * real-time events by calling the captured handler directly.
+ * @returns {{ from: jest.Mock, channel: jest.Mock, _builder: object, _channel: object }}
+ */
 function makeDb() {
   const subscription = { unsubscribe: jest.fn() };
   const channel = {

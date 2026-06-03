@@ -11,6 +11,12 @@ jest.mock('@anthropic-ai/sdk', () => {
   }));
 });
 
+/**
+ * Creates a minimal agent stub with a jest-mocked run() method.
+ * @param {string} name - Agent name used as the registry key.
+ * @param {string} [role='test'] - Agent role string.
+ * @returns {{ name: string, role: string, run: jest.Mock }}
+ */
 function makeAgent(name, role = 'test') {
   return { name, role, run: jest.fn() };
 }

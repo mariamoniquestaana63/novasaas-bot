@@ -5,6 +5,11 @@ const SalesAgent = require('../src/agents/SalesAgent');
 const SupportAgent = require('../src/agents/SupportAgent');
 const ManagerAgent = require('../src/agents/ManagerAgent');
 
+/**
+ * Creates a minimal Kernel stub whose callLLM() resolves with the given text.
+ * @param {string} [llmReply='test reply'] - Text returned in content[0].text.
+ * @returns {{ callLLM: jest.Mock, blackboard: null }}
+ */
 function makeKernel(llmReply = 'test reply') {
   return {
     callLLM: jest.fn().mockResolvedValue({

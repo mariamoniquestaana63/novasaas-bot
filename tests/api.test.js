@@ -2,10 +2,12 @@
 
 /**
  * API endpoint tests.
- * All external dependencies (Supabase, Anthropic, MCP) are mocked so no
- * real network calls are made.  We build a minimal Express app directly
- * using mock instances, mirroring what server.js does.
+ * Imports the real createApp() factory from server.js and passes mock
+ * collaborators so production route handlers are exercised without any real
+ * network calls.
  */
+
+// ── Mock all external dependencies before server.js is required ─────────────
 
 jest.mock('@anthropic-ai/sdk', () =>
   jest.fn().mockImplementation(() => ({
@@ -28,89 +30,57 @@ jest.mock('@modelcontextprotocol/sdk/client/stdio.js', () => ({
 jest.mock('ws', () => jest.fn());
 jest.mock('dotenv', () => ({ config: jest.fn() }));
 
-// ── Build a controlled Express app ──────────────────────────────────────────
+jest.mock('@supabase/supabase-js', () => ({
+  createClient: jest.fn().mockReturnValue({})
+}));
 
-const express = require('express');
+// ── Mock infrastructure loaded — now safe to import server ──────────────────
+
 const request = require('supertest');
+const { createApp } = require('../server');
 
-// Shared mock functions — captured at module level so every test can
-// override them with mockRejectedValueOnce / mockResolvedValueOnce.
+// ── Shared mock collaborators ────────────────────────────────────────────────
+
+/** Mock kernel dispatch — overrideable per-test with mockRejectedValueOnce. */
 const mockDispatch = jest.fn().mockResolvedValue({ reply: 'mocked reply', agent: 'SupportAgent' });
+
+/** Mock contextBroker.saveMessage — overrideable per-test. */
 const mockSaveMessage = jest.fn().mockResolvedValue(undefined);
 
-// Supabase query-builder mock.
-// Terminal calls in the routes:
-//   POST /api/leads  → insert() ends chain
-//   GET  /api/leads  → order() ends chain (no .limit() in that handler)
-const mockQueryBuilder = {
-  select: jest.fn().mockReturnThis(),
-  insert: jest.fn().mockResolvedValue({ error: null }),   // terminal for POST /leads
-  eq: jest.fn().mockReturnThis(),
-  order: jest.fn().mockResolvedValue({ data: [], error: null }), // terminal for GET /leads
-  limit: jest.fn().mockResolvedValue({ data: [], error: null }),
-  single: jest.fn().mockResolvedValue({ data: {}, error: null }),
-};
+/**
+ * Returns a fresh Supabase query-builder mock.
+ * insert() and order() are the terminal calls for the leads routes.
+ */
+function makeMockDb() {
+  const builder = {
+    select: jest.fn().mockReturnThis(),
+    insert: jest.fn().mockResolvedValue({ error: null }),
+    eq: jest.fn().mockReturnThis(),
+    order: jest.fn().mockResolvedValue({ data: [], error: null }),
+    limit: jest.fn().mockResolvedValue({ data: [], error: null }),
+  };
+  return {
+    from: jest.fn().mockReturnValue(builder),
+    _builder: builder,
+  };
+}
 
-const mockDb = {
-  from: jest.fn().mockReturnValue(mockQueryBuilder),
-};
+let app;
+let mockDb;
 
-// Build the app once
-const app = express();
-app.use(express.json());
-
-app.post('/api/chat', async (req, res) => {
-  const { messages, session_id } = req.body;
-  if (!messages || !Array.isArray(messages) || !session_id) {
-    return res.status(400).json({ error: 'messages and session_id are required' });
-  }
-  try {
-    const result = await mockDispatch({ messages }, { session_id });
-    const reply = result.reply;
-    const lastUserMsg = messages[messages.length - 1];
-    await mockSaveMessage(session_id, 'user', lastUserMsg.content);
-    await mockSaveMessage(session_id, 'assistant', reply);
-    res.json({ reply, agent: result.agent });
-  } catch (err) {
-    res.status(500).json({ error: 'AI OS error. Please try again.' });
-  }
-});
-
-app.post('/api/leads', async (req, res) => {
-  const { name, email, session_id } = req.body;
-  if (!name || !email) {
-    return res.status(400).json({ error: 'name and email are required' });
-  }
-  try {
-    const { error } = await mockDb.from('leads').insert([{ name, email, session_id }]);
-    if (error) throw error;
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Could not save lead.' });
-  }
-});
-
-app.get('/api/leads', async (req, res) => {
-  const { data, error } = await mockDb
-    .from('leads')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ leads: data });
+beforeEach(() => {
+  mockDb = makeMockDb();
+  app = createApp(
+    { dispatch: mockDispatch },
+    { saveMessage: mockSaveMessage },
+    mockDb
+  );
 });
 
 afterEach(() => {
   jest.clearAllMocks();
-  // Restore defaults after clearAllMocks wipes them
   mockDispatch.mockResolvedValue({ reply: 'mocked reply', agent: 'SupportAgent' });
   mockSaveMessage.mockResolvedValue(undefined);
-  mockDb.from.mockReturnValue(mockQueryBuilder);
-  mockQueryBuilder.select.mockReturnThis();
-  mockQueryBuilder.eq.mockReturnThis();
-  mockQueryBuilder.insert.mockResolvedValue({ error: null });
-  mockQueryBuilder.order.mockResolvedValue({ data: [], error: null });
-  mockQueryBuilder.limit.mockResolvedValue({ data: [], error: null });
-  mockQueryBuilder.single.mockResolvedValue({ data: {}, error: null });
 });
 
 // ── POST /api/chat ────────────────────────────────────────────────────────────
@@ -196,13 +166,13 @@ describe('POST /api/leads', () => {
       .send({ name: 'Alice', email: 'alice@example.com', session_id: 'sess42' });
 
     expect(mockDb.from).toHaveBeenCalledWith('leads');
-    expect(mockQueryBuilder.insert).toHaveBeenCalledWith([
+    expect(mockDb._builder.insert).toHaveBeenCalledWith([
       expect.objectContaining({ name: 'Alice', email: 'alice@example.com', session_id: 'sess42' })
     ]);
   });
 
   it('returns 500 when DB insert fails', async () => {
-    mockQueryBuilder.insert.mockResolvedValueOnce({ error: { message: 'duplicate' } });
+    mockDb._builder.insert.mockResolvedValueOnce({ error: { message: 'duplicate' } });
 
     const res = await request(app)
       .post('/api/leads')
@@ -218,7 +188,7 @@ describe('POST /api/leads', () => {
 describe('GET /api/leads', () => {
   it('returns 200 with leads array on success', async () => {
     const leads = [{ id: '1', name: 'Alice', email: 'alice@example.com' }];
-    mockQueryBuilder.order.mockResolvedValueOnce({ data: leads, error: null });
+    mockDb._builder.order.mockResolvedValueOnce({ data: leads, error: null });
 
     const res = await request(app).get('/api/leads');
 
@@ -228,11 +198,11 @@ describe('GET /api/leads', () => {
 
   it('orders results by created_at descending', async () => {
     await request(app).get('/api/leads');
-    expect(mockQueryBuilder.order).toHaveBeenCalledWith('created_at', { ascending: false });
+    expect(mockDb._builder.order).toHaveBeenCalledWith('created_at', { ascending: false });
   });
 
   it('returns 500 when DB query fails', async () => {
-    mockQueryBuilder.order.mockResolvedValueOnce({ data: null, error: { message: 'query failed' } });
+    mockDb._builder.order.mockResolvedValueOnce({ data: null, error: { message: 'query failed' } });
 
     const res = await request(app).get('/api/leads');
 
