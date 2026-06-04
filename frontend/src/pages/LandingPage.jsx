@@ -1,326 +1,76 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/AuthContext";
 import { useBinanceFeed } from "../hooks/useBinanceFeed";
 
 const API = import.meta.env.VITE_API_URL ?? "/api";
 
-function fmt(n, decimals = 2) {
+function fmtPrice(n) {
   if (!n && n !== 0) return "—";
-  return n >= 1000
-    ? n.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
-    : n.toFixed(decimals < 2 ? decimals : 4);
+  if (n >= 1000) return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (n >= 1)    return n.toFixed(2);
+  return n.toFixed(4);
+}
+function fmtPct(n) {
+  if (n == null) return "—";
+  return `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
 }
 
-function Spark({ up, w = 40, h = 14 }) {
-  const pts = up
-    ? [[0,12],[6,9],[12,10],[18,6],[24,7],[30,3],[36,4],[40,1]]
-    : [[0,1],[6,4],[12,2],[18,7],[24,4],[30,8],[36,6],[40,12]];
-  const d = pts.map(([x,y], i) => `${i === 0 ? "M" : "L"}${x},${y}`).join(" ");
-  const area = d + ` L${w},${h} L0,${h} Z`;
+function ProgressBar() {
+  const [visible, setVisible] = useState(true);
+  useEffect(() => { const t = setTimeout(() => setVisible(false), 1650); return () => clearTimeout(t); }, []);
+  if (!visible) return null;
+  return <div className="load-bar" />;
+}
+
+function Sparkline({ up, width = 44, height = 16 }) {
+  const points = up
+    ? "0,14 7,10 14,12 21,7 28,8 35,4 42,5 44,2"
+    : "0,2  7,5  14,3  21,8 28,5 35,9 42,7 44,14";
+  const areaPoints = `0,${height} ` + points + ` ${width},${height}`;
+  const color = up ? "#00D68F" : "#FF4D4F";
   return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="flex-shrink-0">
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="flex-shrink-0 opacity-70">
       <defs>
-        <linearGradient id={`sg${up ? "u" : "d"}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={up ? "#00D68F" : "#FF4D4F"} stopOpacity="0.3" />
-          <stop offset="100%" stopColor={up ? "#00D68F" : "#FF4D4F"} stopOpacity="0" />
+        <linearGradient id={`spk-${up ? "u" : "d"}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor={color} stopOpacity="0.35" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
         </linearGradient>
       </defs>
-      <path d={area} fill={`url(#sg${up ? "u" : "d"})`} />
-      <path d={d} fill="none" stroke={up ? "#00D68F" : "#FF4D4F"} strokeWidth="1.5"
+      <polygon points={areaPoints} fill={`url(#spk-${up ? "u" : "d"})`} />
+      <polyline points={points} fill="none" stroke={color} strokeWidth="1.5"
         strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
+const COIN_ORDER = ["BTCUSDT","ETHUSDT","BNBUSDT","XRPUSDT","ADAUSDT","SOLUSDT"];
+
 function Ticker({ feed }) {
-  const items = feed.getAll();
-  if (!items.length) return null;
-  const doubled = [...items, ...items, ...items, ...items];
+  const all = feed.getAll();
+  const ordered = COIN_ORDER.map(sym => all.find(d => d.symbol === sym)).filter(Boolean);
+  if (!ordered.length) return null;
+  const items = [...ordered, ...ordered, ...ordered, ...ordered];
   return (
-    <div className="overflow-hidden border-b border-white/[0.04] bg-[#060A12]/80 backdrop-blur-md py-2.5 group">
-      <div className="flex w-max" style={{ animation: "ticker-scroll 55s linear infinite" }}
-        onMouseEnter={e => e.currentTarget.style.animationPlayState = "paused"}
-        onMouseLeave={e => e.currentTarget.style.animationPlayState = "running"}>
-        {doubled.map((d, i) => (
-          <div key={i} className="inline-flex items-center gap-2.5 px-5 border-r border-white/[0.04] flex-shrink-0">
-            <span className="text-[10px] font-mono font-medium text-white/35 tracking-[0.14em]">
-              {d.symbol.replace("USDT", "")}
-            </span>
-            <span className="text-[11px] font-mono text-white/75 tabular-nums font-medium">
-              ${d.price >= 1000 ? d.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : d.price.toFixed(4)}
-            </span>
-            <Spark up={d.change24h >= 0} w={36} h={12} />
-            <span className={`text-[10px] font-mono tabular-nums font-semibold ${d.change24h >= 0 ? "text-[#00D68F]" : "text-[#FF4D4F]"}`}>
-              {d.change24h >= 0 ? "+" : ""}{d.change24h.toFixed(2)}%
-            </span>
-          </div>
-        ))}
+    <div className="relative overflow-hidden border-b border-white/[0.045] py-2.5"
+      style={{ background: "rgba(5,8,16,0.9)", backdropFilter: "blur(12px)" }}>
+      <div className="absolute inset-y-0 left-0 w-16 z-10 pointer-events-none"
+        style={{ background: "linear-gradient(to right,#050810,transparent)" }} />
+      <div className="absolute inset-y-0 right-0 w-16 z-10 pointer-events-none"
+        style={{ background: "linear-gradient(to left,#050810,transparent)" }} />
+      <div className="ticker-track">
+        {items.map((d, i) => {
+          const up = d.change24h >= 0;
+          return (
+            <div key={i} className="inline-flex items-center gap-3 px-6 border-r border-white/[0.045] select-none">
+              <span className="text-[10px] font-mono font-semibold text-white/35 tracking-[0.14em] uppercase w-12 flex-shrink-0">{d.symbol.replace("USDT","")}</span>
+              <span className="text-[11.5px] font-mono font-medium text-white/85 tabular-nums">${fmtPrice(d.price)}</span>
+              <Sparkline up={up} />
+              <span className={`text-[10.5px] font-mono font-semibold tabular-nums ${up ? "text-success" : "text-danger"}`}>{fmtPct(d.change24h)}</span>
+            </div>
+          );
+        })}
       </div>
-    </div>
-  );
-}
-
-function CandleChart({ seed = 67400 }) {
-  const candles = useMemo(() => {
-    let p = seed;
-    return Array.from({ length: 42 }, (_, i) => {
-      const o = p;
-      const delta = (Math.sin(i * 0.65 + 1.2) * 0.5 + (Math.random() - 0.46)) * 200;
-      const c = o + delta;
-      const h = Math.max(o, c) + Math.abs(Math.random() * 80);
-      const l = Math.min(o, c) - Math.abs(Math.random() * 80);
-      p = c;
-      return { o, c, h, l, bull: c >= o };
-    });
-  }, []);
-
-  const maxP = Math.max(...candles.map(c => c.h));
-  const minP = Math.min(...candles.map(c => c.l));
-  const range = maxP - minP || 1;
-  const W = 480, H = 130;
-  const py = v => ((maxP - v) / range) * H;
-  const px = i => (i / (candles.length - 1)) * W;
-
-  const closeLine = candles.map((c, i) => `${i === 0 ? "M" : "L"}${px(i).toFixed(1)},${py(c.c).toFixed(1)}`).join(" ");
-  const areaPath = closeLine + ` L${W},${H} L0,${H} Z`;
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-full" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="chartArea" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#00FFC6" stopOpacity="0.14" />
-          <stop offset="85%" stopColor="#00FFC6" stopOpacity="0" />
-        </linearGradient>
-        <linearGradient id="chartLine" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#00D4FF" />
-          <stop offset="100%" stopColor="#00FFC6" />
-        </linearGradient>
-      </defs>
-      <path d={areaPath} fill="url(#chartArea)" />
-      {candles.map((c, i) => {
-        const x = px(i);
-        const top = py(Math.max(c.o, c.c));
-        const bot = py(Math.min(c.o, c.c));
-        const bh = Math.max(bot - top, 1.2);
-        const col = c.bull ? "#00D68F" : "#FF4D4F";
-        return (
-          <g key={i}>
-            <line x1={x} y1={py(c.h)} x2={x} y2={py(c.l)} stroke={col} strokeWidth="0.7" opacity="0.45" />
-            <rect x={x - 4} y={top} width="8" height={bh} fill={col} opacity="0.88" rx="1" />
-          </g>
-        );
-      })}
-      <path d={closeLine} fill="none" stroke="url(#chartLine)" strokeWidth="1.8"
-        strokeLinecap="round" strokeLinejoin="round" opacity="0.8" />
-    </svg>
-  );
-}
-
-function VolumeBars() {
-  const bars = useMemo(() => Array.from({ length: 56 }, (_, i) => ({
-    h: 15 + Math.random() * 85,
-    bull: Math.random() > 0.42,
-  })), []);
-  return (
-    <div className="flex items-end gap-px h-full">
-      {bars.map((b, i) => (
-        <div key={i} className="flex-1 rounded-[1px]"
-          style={{ height: `${b.h}%`, background: b.bull ? "rgba(0,214,143,0.45)" : "rgba(255,77,79,0.45)" }} />
-      ))}
-    </div>
-  );
-}
-
-function OBRow({ price, size, depth, side }) {
-  return (
-    <div className="relative flex justify-between items-center text-[9.5px] font-mono px-2 py-[2.5px] rounded-[2px] overflow-hidden">
-      <div className="absolute inset-y-0 right-0 rounded-[2px] transition-all duration-500"
-        style={{ width: `${depth}%`, background: side === "ask" ? "rgba(255,77,79,0.07)" : "rgba(0,214,143,0.07)" }} />
-      <span className={`tabular-nums relative z-10 font-medium ${side === "ask" ? "text-[#FF4D4F]" : "text-[#00D68F]"}`}>{price}</span>
-      <span className="tabular-nums relative z-10 text-white/40">{size}</span>
-    </div>
-  );
-}
-
-function TradingTerminal({ price }) {
-  const base = price ?? 67382;
-
-  const { asks, bids, trades } = useMemo(() => {
-    const asks = Array.from({ length: 9 }, (_, i) => ({
-      price: (base + (9 - i) * 14.8).toFixed(2),
-      size: (0.08 + Math.random() * 2.2).toFixed(4),
-      depth: 18 + i * 8 + Math.random() * 10,
-    }));
-    const bids = Array.from({ length: 9 }, (_, i) => ({
-      price: (base - i * 13.5).toFixed(2),
-      size: (0.1 + Math.random() * 2.5).toFixed(4),
-      depth: 72 - i * 6 + Math.random() * 8,
-    }));
-    const trades = Array.from({ length: 8 }, (_, i) => ({
-      price: (base + (Math.random() * 22 - 11)).toFixed(2),
-      size: (Math.random() * 0.12 + 0.001).toFixed(5),
-      side: Math.random() > 0.48,
-      ago: i,
-    }));
-    return { asks, bids, trades };
-  }, []);
-
-  const tabs = ["Chart", "DOM", "Tape", "Positions"];
-  const [activeTab, setActiveTab] = useState("Chart");
-
-  return (
-    <div className="relative w-full max-w-[960px] mx-auto mt-20">
-      <div className="absolute -inset-px rounded-3xl pointer-events-none"
-        style={{ background: "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(0,255,198,0.08) 0%, transparent 70%)" }} />
-      <div className="absolute left-1/2 -translate-x-1/2 -top-16 w-[600px] h-[200px] pointer-events-none blur-[60px] rounded-full"
-        style={{ background: "radial-gradient(ellipse, rgba(0,212,255,0.06) 0%, transparent 70%)" }} />
-
-      <div className="relative rounded-2xl border border-white/[0.08] overflow-hidden"
-        style={{ background: "linear-gradient(175deg, #0C1220 0%, #080C14 60%, #060A10 100%)", boxShadow: "0 40px 100px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04) inset" }}>
-
-        <div className="flex items-center gap-0 h-10 border-b border-white/[0.05]"
-          style={{ background: "rgba(255,255,255,0.015)" }}>
-          <div className="flex items-center gap-1.5 px-4 pr-6 border-r border-white/[0.04] h-full">
-            <div className="w-[11px] h-[11px] rounded-full bg-[#FF5F57] shadow-[0_0_4px_rgba(255,95,87,0.4)]" />
-            <div className="w-[11px] h-[11px] rounded-full bg-[#FFBD2E] shadow-[0_0_4px_rgba(255,189,46,0.3)]" />
-            <div className="w-[11px] h-[11px] rounded-full bg-[#28CA41] shadow-[0_0_4px_rgba(40,202,65,0.35)]" />
-          </div>
-          <div className="flex items-center h-full border-r border-white/[0.04]">
-            {["BTC/USDT", "ETH/USDT", "SOL/USDT"].map((sym, i) => (
-              <button key={sym}
-                className={`px-4 h-full text-[10px] font-mono tracking-wide transition-colors border-r border-white/[0.04] ${i === 0 ? "text-accent bg-accent/[0.06]" : "text-white/20 hover:text-white/40"}`}>
-                {sym}
-              </button>
-            ))}
-          </div>
-          <div className="ml-auto flex items-center gap-4 px-4 text-[9px] font-mono">
-            <span className="text-white/20 tracking-widest">PERP · 20×</span>
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#00D68F] shadow-[0_0_6px_rgba(0,214,143,0.7)]" style={{ animation: "pulse 2s ease-in-out infinite" }} />
-              <span className="text-[#00D68F]/70 tracking-widest">LIVE</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-0 h-8 border-b border-white/[0.04] px-4"
-          style={{ background: "rgba(0,0,0,0.15)" }}>
-          {tabs.map(t => (
-            <button key={t} onClick={() => setActiveTab(t)}
-              className={`px-3 h-full text-[9px] font-mono tracking-widest transition-colors ${activeTab === t ? "text-white/70 border-b border-accent/50" : "text-white/20 hover:text-white/40"}`}>
-              {t}
-            </button>
-          ))}
-          <div className="ml-auto flex items-center gap-3 text-[9px] font-mono text-white/15">
-            <span>UTC 14:23:07</span>
-            <span className="text-white/[0.08]">|</span>
-            <span>LATENCY 4ms</span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-[1fr_160px_130px] divide-x divide-white/[0.04]">
-          <div className="p-4 flex flex-col gap-2.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-baseline gap-2.5">
-                <span className="text-[26px] font-mono font-bold text-white tabular-nums tracking-tight"
-                  style={{ textShadow: "0 0 30px rgba(0,255,198,0.15)" }}>
-                  ${base.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-                <div className="flex items-center gap-1 bg-[#00D68F]/10 border border-[#00D68F]/20 rounded px-1.5 py-0.5">
-                  <span className="text-[#00D68F] font-mono text-[10px] font-semibold">▲ +2.34%</span>
-                </div>
-                <span className="text-white/20 text-[10px] font-mono">24h</span>
-              </div>
-              <div className="flex items-center gap-1">
-                {["5m","15m","1h","4h","1D","1W"].map(t => (
-                  <button key={t}
-                    className={`text-[9px] font-mono px-2 py-1 rounded transition-all ${t === "1h" ? "bg-accent/[0.12] text-accent border border-accent/25 shadow-[0_0_10px_rgba(0,255,198,0.08)]" : "text-white/20 hover:text-white/45 hover:bg-white/[0.03]"}`}>
-                    {t}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="h-[130px] w-full"><CandleChart seed={base} /></div>
-            <div className="h-[26px] w-full"><VolumeBars /></div>
-            <div className="grid grid-cols-5 gap-0 pt-2 border-t border-white/[0.04]">
-              {[["Mark",`$${(base+1.2).toFixed(2)}`],["Index",`$${(base-0.8).toFixed(2)}`],["24h High","$68,942"],["24h Low","$65,210"],["Open Int.","$18.7B"]].map(([l,v]) => (
-                <div key={l} className="px-2 first:pl-0">
-                  <div className="text-[8.5px] font-mono text-white/20 tracking-wide mb-0.5 uppercase">{l}</div>
-                  <div className="text-[10.5px] font-mono text-white/65 tabular-nums">{v}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between px-2 py-2 border-b border-white/[0.04]">
-              <span className="text-[8.5px] font-mono text-white/20 tracking-[0.15em] uppercase">Order Book</span>
-              <span className="text-[8px] font-mono text-white/15 bg-white/[0.04] px-1.5 py-0.5 rounded">0.01</span>
-            </div>
-            <div className="flex justify-between text-[7.5px] font-mono text-white/15 px-2 py-1">
-              <span>PRICE</span><span>QTY</span>
-            </div>
-            <div className="flex-1 flex flex-col justify-start gap-0 px-1">
-              {asks.map((a, i) => <OBRow key={i} {...a} side="ask" />)}
-            </div>
-            <div className="flex justify-center items-center gap-2 py-2 border-y border-white/[0.05] mx-2">
-              <span className="font-mono font-bold text-[12px] text-white tabular-nums">
-                {base.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-              <span className="text-[#00D68F] text-[9px] font-mono">▲</span>
-            </div>
-            <div className="flex-1 flex flex-col gap-0 px-1">
-              {bids.map((b, i) => <OBRow key={i} {...b} side="bid" />)}
-            </div>
-          </div>
-
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between px-2 py-2 border-b border-white/[0.04]">
-              <span className="text-[8.5px] font-mono text-white/20 tracking-[0.15em] uppercase">Tape</span>
-              <span className="text-[8px] font-mono text-white/15">AGG</span>
-            </div>
-            <div className="flex justify-between text-[7.5px] font-mono text-white/15 px-2 py-1">
-              <span>PRICE</span><span>SIZE</span>
-            </div>
-            <div className="flex flex-col gap-0 px-1 overflow-hidden">
-              {trades.map((t, i) => (
-                <div key={i} className="flex justify-between items-center text-[9.5px] font-mono px-1.5 py-[2.5px]">
-                  <span className={`tabular-nums font-medium ${t.side ? "text-[#00D68F]" : "text-[#FF4D4F]"}`}>{t.price}</span>
-                  <span className="text-white/30 tabular-nums text-[8.5px]">{t.size}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-auto border-t border-white/[0.04] p-2">
-              <div className="text-[8px] font-mono text-white/15 mb-1.5 tracking-wider">BUY / SELL RATIO</div>
-              <div className="h-1.5 rounded-full overflow-hidden bg-white/[0.04] flex">
-                <div className="h-full bg-[#00D68F]/60 rounded-l-full" style={{ width: "58%" }} />
-                <div className="h-full bg-[#FF4D4F]/60 rounded-r-full" style={{ width: "42%" }} />
-              </div>
-              <div className="flex justify-between text-[8px] font-mono mt-1">
-                <span className="text-[#00D68F]/60">58%</span>
-                <span className="text-[#FF4D4F]/60">42%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="border-t border-white/[0.04] px-4 py-2 flex items-center gap-6"
-          style={{ background: "rgba(0,0,0,0.2)" }}>
-          {[["Funding","+0.0100%",true],["Next Fund.","07:42:18",null],["Basis","+12.40",true],["Volume 24h","$2.41B",null],["Trades/s","1,847",null]].map(([l,v,pos]) => (
-            <div key={l} className="flex flex-col gap-0.5">
-              <span className="text-[7.5px] font-mono text-white/15 tracking-wider uppercase">{l}</span>
-              <span className={`text-[10px] font-mono tabular-nums ${pos === true ? "text-[#00D68F]" : pos === false ? "text-[#FF4D4F]" : "text-white/50"}`}>{v}</span>
-            </div>
-          ))}
-          <div className="ml-auto flex gap-2">
-            <button className="text-[9px] font-mono font-bold px-3 py-1 rounded bg-[#00D68F]/15 text-[#00D68F] border border-[#00D68F]/25 hover:bg-[#00D68F]/25 transition-all">LONG</button>
-            <button className="text-[9px] font-mono font-bold px-3 py-1 rounded bg-[#FF4D4F]/15 text-[#FF4D4F] border border-[#FF4D4F]/25 hover:bg-[#FF4D4F]/25 transition-all">SHORT</button>
-          </div>
-        </div>
-      </div>
-
-      <div className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none rounded-b-2xl"
-        style={{ background: "linear-gradient(to top, #040812 0%, transparent 100%)" }} />
     </div>
   );
 }
@@ -331,60 +81,267 @@ function FadeUp({ children, delay = 0, className = "" }) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const io = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) { setOn(true); io.disconnect(); }
-    }, { threshold: 0.06 });
+    const io = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setOn(true); io.disconnect(); } },
+      { threshold: 0.07 }
+    );
     io.observe(el);
     return () => io.disconnect();
   }, []);
   return (
-    <div ref={ref} className={className}
-      style={{ opacity: on ? 1 : 0, transform: on ? "translateY(0)" : "translateY(28px)", transition: `opacity 0.75s cubic-bezier(.16,1,.3,1) ${delay}ms, transform 0.75s cubic-bezier(.16,1,.3,1) ${delay}ms` }}>
+    <div ref={ref} className={`fade-up${on ? " visible" : ""} ${className}`}
+      style={{ transitionDelay: on ? `${delay}ms` : "0ms" }}>
       {children}
     </div>
   );
 }
 
-function LoadBar() {
-  const [pct, setPct] = useState(0);
-  const [gone, setGone] = useState(false);
-  useEffect(() => {
-    const steps = [[60,30],[300,62],[700,88],[1050,100]];
-    const timers = steps.map(([ms,v]) => setTimeout(() => setPct(v), ms));
-    const hide = setTimeout(() => setGone(true), 1700);
-    return () => [...timers, hide].forEach(clearTimeout);
+function CandleChart({ seed = 67400 }) {
+  const candles = useMemo(() => {
+    let p = seed;
+    return Array.from({ length: 48 }, (_, i) => {
+      const o = p;
+      const move = (Math.sin(i * 0.72 + 1.1) * 0.45 + (Math.random() - 0.455)) * 220;
+      const c = o + move;
+      const h = Math.max(o, c) + Math.random() * 90;
+      const l = Math.min(o, c) - Math.random() * 90;
+      p = c;
+      return { o, c, h, l, bull: c >= o };
+    });
   }, []);
-  if (gone) return null;
+  const allH = candles.map(x => x.h), allL = candles.map(x => x.l);
+  const maxP = Math.max(...allH), minP = Math.min(...allL), range = maxP - minP || 1;
+  const W = 520, H = 140;
+  const py = v => ((maxP - v) / range) * H;
+  const px = i => (i / (candles.length - 1)) * W;
+  const closePath = candles.map((c,i) => `${i===0?"M":"L"}${px(i).toFixed(1)},${py(c.c).toFixed(1)}`).join(" ");
+  const areaPath = closePath + ` L${W},${H} L0,${H} Z`;
   return (
-    <div className="fixed top-0 left-0 right-0 z-[200] h-[2px] pointer-events-none">
-      <div style={{ width: `${pct}%`, background: "linear-gradient(90deg,#00FFC6,#00D4FF,#818CF8)", boxShadow: "0 0 10px rgba(0,255,198,0.6)", transition: "width 0.45s cubic-bezier(.4,0,.2,1)", height: "100%" }} />
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-full" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="ca" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#00FFC6" stopOpacity="0.16" />
+          <stop offset="100%" stopColor="#00FFC6" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id="cl" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#00D4FF" />
+          <stop offset="100%" stopColor="#00FFC6" />
+        </linearGradient>
+      </defs>
+      <path d={areaPath} fill="url(#ca)" />
+      {candles.map((c, i) => {
+        const x = px(i), top = py(Math.max(c.o,c.c)), bot = py(Math.min(c.o,c.c)), bh = Math.max(bot-top,1.5);
+        const col = c.bull ? "#00D68F" : "#FF4D4F";
+        return (
+          <g key={i}>
+            <line x1={x} y1={py(c.h)} x2={x} y2={py(c.l)} stroke={col} strokeWidth="0.7" opacity="0.4" />
+            <rect x={x-4.5} y={top} width="9" height={bh} fill={col} opacity="0.9" rx="1.2" />
+          </g>
+        );
+      })}
+      <path d={closePath} fill="none" stroke="url(#cl)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity="0.85" />
+    </svg>
+  );
+}
+
+function VolumeBars() {
+  const bars = useMemo(() => Array.from({ length: 60 }, () => ({ h: 12+Math.random()*88, bull: Math.random()>0.44 })), []);
+  return (
+    <div className="flex items-end gap-[1.5px] h-full">
+      {bars.map((b,i) => <div key={i} className="flex-1 rounded-[1px]" style={{ height:`${b.h}%`, background: b.bull?"rgba(0,214,143,0.42)":"rgba(255,77,79,0.42)" }} />)}
     </div>
   );
 }
 
-function Card({ icon, tag, title, desc, delay = 0 }) {
+function OBRow({ price, size, depth, side }) {
   return (
-    <FadeUp delay={delay}>
-      <div className="group relative rounded-2xl border border-white/[0.06] overflow-hidden h-full p-6 cursor-default transition-all duration-300 hover:-translate-y-1 hover:border-white/[0.12]"
-        style={{ background: "linear-gradient(145deg,rgba(255,255,255,0.025) 0%,rgba(255,255,255,0.01) 100%)", backdropFilter: "blur(20px)", boxShadow: "0 4px 24px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.04)" }}>
-        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-accent/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="flex items-start justify-between mb-5">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg border border-white/[0.07]" style={{ background: "rgba(255,255,255,0.035)" }}>{icon}</div>
-          <span className="text-[8px] font-mono tracking-[0.18em] border rounded px-2 py-0.5" style={{ color: "rgba(0,255,198,0.45)", borderColor: "rgba(0,255,198,0.12)", background: "rgba(0,255,198,0.04)" }}>{tag}</span>
+    <div className="relative grid grid-cols-2 text-[9.5px] font-mono px-2 py-[2.5px] rounded-[2px] overflow-hidden">
+      <div className="absolute inset-y-0 right-0" style={{ width:`${depth}%`, background: side==="ask"?"rgba(255,77,79,0.08)":"rgba(0,214,143,0.08)" }} />
+      <span className={`tabular-nums z-10 relative font-medium ${side==="ask"?"text-danger":"text-success"}`}>{price}</span>
+      <span className="tabular-nums z-10 relative text-white/38 text-right">{size}</span>
+    </div>
+  );
+}
+
+function TerminalMockup({ livePrice }) {
+  const base = livePrice ?? 67450;
+  const { asks, bids, trades } = useMemo(() => {
+    const asks = Array.from({length:10},(_,i) => ({ price:(base+(10-i)*15.4).toFixed(2), size:(0.06+Math.random()*2.5).toFixed(4), depth:14+i*7+Math.random()*12 }));
+    const bids = Array.from({length:10},(_,i) => ({ price:(base-i*14.1).toFixed(2), size:(0.08+Math.random()*2.8).toFixed(4), depth:75-i*5.5+Math.random()*8 }));
+    const trades = Array.from({length:9},(_,i) => ({ price:(base+(Math.random()*24-12)).toFixed(2), size:(0.001+Math.random()*0.14).toFixed(5), buy:Math.random()>0.46, s:i+1 }));
+    return { asks, bids, trades };
+  }, []);
+  const [activeChart, setActiveChart] = useState("1H");
+  const intervals = ["5m","15m","1H","4H","1D"];
+  return (
+    <div className="relative w-full max-w-[980px] mx-auto mt-16 select-none">
+      <div className="absolute -inset-8 pointer-events-none" style={{ background:"radial-gradient(ellipse 65% 55% at 50% 30%,rgba(0,255,198,0.07) 0%,transparent 70%)", filter:"blur(1px)" }} />
+      <div className="relative rounded-2xl overflow-hidden terminal-window">
+        <div className="flex items-center gap-0 h-[38px] border-b border-white/[0.055]" style={{ background:"rgba(255,255,255,0.018)" }}>
+          <div className="flex items-center gap-[6px] pl-4 pr-5 border-r border-white/[0.04] h-full">
+            {["#FF5F57","#FFBD2E","#28CA41"].map((c,i) => <div key={i} className="w-[11px] h-[11px] rounded-full flex-shrink-0" style={{ backgroundColor:c, boxShadow:`0 0 5px ${c}55` }} />)}
+          </div>
+          <div className="flex h-full">
+            {["BTC/USDT","ETH/USDT","SOL/USDT"].map((sym,i) => (
+              <button key={sym} className={`h-full px-4 text-[10px] font-mono tracking-wide border-r border-white/[0.04] transition-colors ${i===0?"text-accent bg-accent/[0.07] font-semibold":"text-white/22 hover:text-white/45"}`}>{sym}</button>
+            ))}
+          </div>
+          <div className="ml-auto flex items-center gap-5 pr-4 text-[9px] font-mono">
+            <span className="text-white/18 tracking-wider">PERP · 20×</span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-[7px] h-[7px] rounded-full bg-success flex-shrink-0" style={{ animation:"pulse-dot 2.2s ease-in-out infinite", boxShadow:"0 0 6px rgba(0,214,143,0.7)" }} />
+              <span className="text-success/70 tracking-widest">LIVE</span>
+            </div>
+          </div>
         </div>
-        <h3 className="text-white/90 font-semibold text-[14px] mb-2 tracking-tight leading-snug">{title}</h3>
-        <p className="text-white/28 text-[12px] leading-[1.65]">{desc}</p>
+        <div className="flex items-center border-b border-white/[0.04] px-3 h-[32px]" style={{ background:"rgba(0,0,0,0.18)" }}>
+          {["Chart","Order Book","Tape","Positions"].map(tab => (
+            <button key={tab} className="px-3 h-full text-[9px] font-mono tracking-widest text-white/22 hover:text-white/50 transition-colors">{tab}</button>
+          ))}
+          <div className="ml-auto flex items-center gap-3 text-[8.5px] font-mono text-white/14">
+            <span>UTC 09:41:22</span>
+            <span className="text-white/[0.07]">│</span>
+            <span className="text-success/50">LATENCY 6ms</span>
+          </div>
+        </div>
+        <div className="grid divide-x divide-white/[0.04]" style={{ gridTemplateColumns:"1fr 170px 140px" }}>
+          <div className="flex flex-col gap-3 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-baseline gap-3">
+                <span className="text-[28px] font-mono font-bold text-white tabular-nums tracking-tight" style={{ textShadow:"0 0 30px rgba(0,255,198,0.18)" }}>${fmtPrice(base)}</span>
+                <span className="flex items-center gap-1 bg-success/[0.1] border border-success/20 rounded px-2 py-0.5"><span className="text-success text-[10px] font-mono font-bold">▲ +2.34%</span></span>
+                <span className="text-white/20 text-[9.5px] font-mono">24h</span>
+              </div>
+              <div className="flex items-center gap-1">
+                {intervals.map(iv => (
+                  <button key={iv} onClick={() => setActiveChart(iv)}
+                    className={`text-[9px] font-mono px-2 py-1 rounded transition-all ${activeChart===iv?"bg-accent/[0.13] text-accent border border-accent/25 shadow-[0_0_10px_rgba(0,255,198,0.1)]":"text-white/22 hover:text-white/50 hover:bg-white/[0.035]"}`}>{iv}</button>
+                ))}
+              </div>
+            </div>
+            <div className="h-[140px]"><CandleChart seed={base} /></div>
+            <div className="h-[24px]"><VolumeBars /></div>
+            <div className="grid grid-cols-5 border-t border-white/[0.04] pt-2.5 gap-px">
+              {[["Mark",`$${(base+1.4).toFixed(2)}`],["Index",`$${(base-0.6).toFixed(2)}`],["24h High","$68,942"],["24h Low","$65,210"],["Open Int.","$18.7B"]].map(([l,v]) => (
+                <div key={l} className="px-2 first:pl-0">
+                  <div className="text-[8px] font-mono text-white/20 tracking-wider mb-0.5 uppercase">{l}</div>
+                  <div className="text-[10px] font-mono text-white/62 tabular-nums">{v}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col">
+            <div className="flex items-center justify-between px-2.5 py-2 border-b border-white/[0.04]">
+              <span className="text-[8.5px] font-mono text-white/20 tracking-[0.15em] uppercase">Order Book</span>
+              <span className="text-[8px] font-mono text-white/15 bg-white/[0.04] px-1.5 py-0.5 rounded">0.01</span>
+            </div>
+            <div className="flex justify-between px-2.5 py-1 text-[7.5px] font-mono text-white/14"><span>PRICE (USDT)</span><span>SIZE (BTC)</span></div>
+            <div className="px-1 flex flex-col">{asks.map((a,i) => <OBRow key={i} {...a} side="ask" />)}</div>
+            <div className="flex items-center justify-center gap-2 py-1.5 my-0.5 border-y border-white/[0.06] mx-2">
+              <span className="font-mono font-bold text-[13px] text-white tabular-nums" style={{ textShadow:"0 0 16px rgba(0,255,198,0.2)" }}>{fmtPrice(base)}</span>
+              <span className="text-success text-[9px]">▲</span>
+            </div>
+            <div className="px-1 flex flex-col">{bids.map((b,i) => <OBRow key={i} {...b} side="bid" />)}</div>
+          </div>
+          <div className="flex flex-col">
+            <div className="flex items-center justify-between px-2.5 py-2 border-b border-white/[0.04]">
+              <span className="text-[8.5px] font-mono text-white/20 tracking-[0.15em] uppercase">Recent Trades</span>
+            </div>
+            <div className="flex justify-between px-2.5 py-1 text-[7.5px] font-mono text-white/14"><span>PRICE</span><span>SIZE</span></div>
+            <div className="flex flex-col px-1.5">
+              {trades.map((t,i) => (
+                <div key={i} className="flex justify-between items-center py-[2.5px]">
+                  <span className={`text-[9.5px] font-mono tabular-nums font-medium ${t.buy?"text-success":"text-danger"}`}>{t.price}</span>
+                  <span className="text-[8.5px] font-mono tabular-nums text-white/30">{t.size}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-auto border-t border-white/[0.04] p-2.5">
+              <div className="text-[7.5px] font-mono text-white/15 mb-1.5 tracking-wider uppercase">Taker Buy/Sell</div>
+              <div className="h-[5px] rounded-full overflow-hidden flex gap-px" style={{ background:"rgba(255,255,255,0.05)" }}>
+                <div className="h-full rounded-l-full" style={{ width:"56%", background:"rgba(0,214,143,0.65)" }} />
+                <div className="h-full rounded-r-full" style={{ width:"44%", background:"rgba(255,77,79,0.65)" }} />
+              </div>
+              <div className="flex justify-between mt-1 text-[8px] font-mono"><span className="text-success/55">56% Buy</span><span className="text-danger/55">44% Sell</span></div>
+            </div>
+          </div>
+        </div>
+        <div className="border-t border-white/[0.04] px-4 py-2.5 flex flex-wrap items-center gap-6" style={{ background:"rgba(0,0,0,0.22)" }}>
+          {[["Funding Rate","+0.0100%","success"],["Next Funding","07:42:18",null],["Basis","+$14.20","success"],["Volume 24h","$2.41B",null],["Trades/sec","1,847",null]].map(([l,v,c]) => (
+            <div key={l} className="flex flex-col gap-0.5">
+              <span className="text-[7.5px] font-mono text-white/15 tracking-wider uppercase">{l}</span>
+              <span className={`text-[10px] font-mono tabular-nums font-medium ${c==="success"?"text-success":c==="danger"?"text-danger":"text-white/50"}`}>{v}</span>
+            </div>
+          ))}
+          <div className="ml-auto flex gap-2">
+            <button className="text-[9px] font-mono font-bold px-3 py-1.5 rounded-md transition-all bg-success/[0.12] text-success border border-success/25 hover:bg-success/[0.22]">LONG</button>
+            <button className="text-[9px] font-mono font-bold px-3 py-1.5 rounded-md transition-all bg-danger/[0.12] text-danger border border-danger/25 hover:bg-danger/[0.22]">SHORT</button>
+          </div>
+        </div>
+      </div>
+      <div className="absolute bottom-0 left-0 right-0 h-36 pointer-events-none rounded-b-2xl" style={{ background:"linear-gradient(to top,#050810 0%,transparent 100%)" }} />
+      <div className="absolute -bottom-4 left-8 right-8 h-12 pointer-events-none" style={{ background:"radial-gradient(ellipse 70% 60% at 50% 100%,rgba(0,255,198,0.06) 0%,transparent 70%)", filter:"blur(4px)" }} />
+    </div>
+  );
+}
+
+function FeatureCard({ icon, tag, title, desc, delay = 0 }) {
+  return (
+    <FadeUp delay={delay} className="h-full">
+      <div className="group relative glass-card p-6 rounded-2xl h-full overflow-hidden transition-all duration-300 cursor-default hover:-translate-y-1.5 hover:border-white/[0.12] hover:shadow-[0_16px_48px_rgba(0,0,0,0.5)]">
+        <div className="absolute top-0 left-0 right-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background:"linear-gradient(90deg,transparent,rgba(0,255,198,0.35),transparent)" }} />
+        <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-8 h-24 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background:"radial-gradient(ellipse,rgba(0,255,198,0.15) 0%,transparent 70%)", filter:"blur(4px)" }} />
+        <div className="flex items-start justify-between mb-6">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.07)" }}>{icon}</div>
+          <span className="text-[8px] font-mono tracking-[0.18em] px-2 py-0.5 rounded border" style={{ color:"rgba(0,255,198,0.5)", borderColor:"rgba(0,255,198,0.14)", background:"rgba(0,255,198,0.05)" }}>{tag}</span>
+        </div>
+        <h3 className="text-white/90 font-semibold text-[15px] mb-2.5 tracking-tight leading-snug">{title}</h3>
+        <p className="text-white/30 text-[13px] leading-[1.7]">{desc}</p>
       </div>
     </FadeUp>
   );
 }
 
-function Stat({ value, label }) {
+function StatBadge({ value, label }) {
   return (
-    <div className="flex flex-col items-center gap-1">
-      <span className="text-[32px] font-bold tracking-tight tabular-nums" style={{ background: "linear-gradient(135deg,#00FFC6,#00D4FF)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{value}</span>
-      <span className="text-[11px] font-mono text-white/25 tracking-wide">{label}</span>
-    </div>
+    <FadeUp>
+      <div className="flex flex-col items-center gap-1.5 text-center">
+        <span className="text-[34px] font-bold tabular-nums tracking-tight" style={{ background:"linear-gradient(135deg,#00FFC6 0%,#00D4FF 50%,#A78BFA 100%)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>{value}</span>
+        <span className="text-[11px] font-mono text-white/25 tracking-widest uppercase">{label}</span>
+      </div>
+    </FadeUp>
+  );
+}
+
+function Nav({ user, navigate, feed }) {
+  return (
+    <header className="sticky top-0 z-50 border-b border-white/[0.045]" style={{ background:"rgba(5,8,16,0.88)", backdropFilter:"blur(24px) saturate(180%)" }}>
+      <div className="max-w-page mx-auto flex items-center h-[54px] px-6 md:px-10">
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className="font-mono font-bold text-[16px] text-accent tracking-tight" style={{ textShadow:"0 0 24px rgba(0,255,198,0.45)" }}>GRAVIA</span>
+          <span className="hidden sm:inline text-white/[0.07] font-mono text-xs">/ TERMINAL</span>
+        </div>
+        <nav className="hidden md:flex items-center gap-7 ml-10">
+          {[["Product","#"],["Pricing","/pricing"],["Docs","#"]].map(([l,href]) => (
+            <Link key={l} to={href} className="text-[12.5px] text-white/32 hover:text-white/72 transition-colors font-medium">{l}</Link>
+          ))}
+        </nav>
+        <div className="ml-auto flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1 rounded-full border border-white/[0.06]" style={{ background:"rgba(255,255,255,0.025)" }}>
+            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background:feed.connected?"#00D68F":"#FFBD2E", boxShadow:feed.connected?"0 0 6px rgba(0,214,143,0.7)":"0 0 6px rgba(255,189,46,0.5)", animation:"pulse-dot 2.2s ease-in-out infinite" }} />
+            <span style={{ color:feed.connected?"rgba(0,214,143,0.8)":"rgba(255,189,46,0.8)" }}>{feed.connected?"live":feed.simulated?"sim":"connecting"}</span>
+          </div>
+          {user ? (
+            <button onClick={() => navigate("/dashboard")} className="btn-primary text-[12.5px] px-4 py-[7px]">Dashboard →</button>
+          ) : (
+            <>
+              <button onClick={() => navigate("/auth")} className="text-[12.5px] text-white/35 hover:text-white/70 transition-colors font-medium hidden sm:block">Sign in</button>
+              <button onClick={() => navigate("/auth?tab=signup")} className="btn-primary text-[12.5px] px-4 py-[7px]">Get started</button>
+            </>
+          )}
+        </div>
+      </div>
+    </header>
   );
 }
 
@@ -393,188 +350,127 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const feed = useBinanceFeed();
   const [email, setEmail] = useState("");
-  const [wl, setWl] = useState("idle");
+  const [wlState, setWl] = useState("idle");
   const btc = feed.get("BTCUSDT");
 
-  async function joinWaitlist(e) {
-    e.preventDefault();
-    setWl("loading");
+  async function handleWaitlist(e) {
+    e.preventDefault(); setWl("loading");
     try {
-      const r = await fetch(`${API}/api/waitlist`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) });
+      const r = await fetch(`${API}/api/waitlist`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email }) });
       setWl(r.ok ? "done" : "error");
     } catch { setWl("error"); }
   }
 
   return (
-    <div className="min-h-screen font-sans antialiased" style={{ background: "#040812" }}>
-      <div className="fixed inset-0 pointer-events-none" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.022) 1px,transparent 1px)", backgroundSize: "64px 64px" }} />
-      <div className="fixed inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 100% 50% at 50% -2%,rgba(0,40,60,0.9) 0%,transparent 55%)" }} />
-      <div className="fixed inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 40% at 80% 80%,rgba(99,102,241,0.04) 0%,transparent 60%)" }} />
+    <div className="relative min-h-screen overflow-x-hidden" style={{ background:"#050810" }}>
+      <div className="fixed inset-0 grid-bg pointer-events-none z-0" />
+      <div className="fixed inset-0 pointer-events-none z-0" style={{ background:"radial-gradient(ellipse 95% 50% at 50% -8%,#091A28 0%,transparent 58%)" }} />
+      <div className="fixed inset-0 pointer-events-none z-0" style={{ background:"radial-gradient(ellipse 55% 40% at 85% 90%,rgba(99,102,241,0.04) 0%,transparent 60%)" }} />
+      <div className="relative z-10">
+        <ProgressBar />
+        <Ticker feed={feed} />
+        <Nav user={user} navigate={navigate} feed={feed} />
 
-      <LoadBar />
-      <Ticker feed={feed} />
-
-      <header className="sticky top-0 z-50 border-b border-white/[0.045]" style={{ background: "rgba(4,8,18,0.88)", backdropFilter: "blur(24px) saturate(180%)" }}>
-        <div className="max-w-[1280px] mx-auto flex items-center h-[54px] px-6 md:px-10">
-          <div className="flex items-center gap-2">
-            <span className="text-accent font-mono font-bold text-[15px] tracking-tight" style={{ textShadow: "0 0 24px rgba(0,255,198,0.4)" }}>GRAVIA</span>
-            <span className="hidden sm:block text-white/[0.08] font-mono text-xs">/ TERMINAL</span>
-          </div>
-          <nav className="hidden md:flex items-center gap-6 ml-10">
-            {["Product","Pricing","Docs"].map(l => (
-              <Link key={l} to={l === "Pricing" ? "/pricing" : "#"} className="text-[12px] text-white/30 hover:text-white/70 transition-colors font-medium tracking-wide">{l}</Link>
-            ))}
-          </nav>
-          <div className="ml-auto flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-mono px-3 py-1 rounded-full border border-white/[0.06]" style={{ background: "rgba(255,255,255,0.025)" }}>
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: feed.connected ? "#00D68F" : "#FFBD2E", boxShadow: feed.connected ? "0 0 6px rgba(0,214,143,0.7)" : "0 0 6px rgba(255,189,46,0.5)", animation: "pulse 2s ease-in-out infinite" }} />
-              <span style={{ color: feed.connected ? "rgba(0,214,143,0.8)" : "rgba(255,189,46,0.8)" }}>{feed.connected ? "live" : feed.simulated ? "sim" : "connecting"}</span>
-            </div>
-            {user ? (
-              <button onClick={() => navigate("/dashboard")} className="text-[12px] font-bold px-4 py-1.5 rounded-xl transition-all duration-200 hover:scale-[1.02]" style={{ background: "#00FFC6", color: "#040812", boxShadow: "0 0 20px rgba(0,255,198,0.25)" }}>Dashboard →</button>
-            ) : (
-              <>
-                <button onClick={() => navigate("/auth")} className="text-[12px] text-white/35 hover:text-white/70 transition-colors font-medium">Sign in</button>
-                <button onClick={() => navigate("/auth?tab=signup")}
-                  className="text-[12px] font-bold px-4 py-1.5 rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-                  style={{ background: "#00FFC6", color: "#040812", boxShadow: "0 0 20px rgba(0,255,198,0.22)" }}
-                  onMouseEnter={e => e.currentTarget.style.boxShadow = "0 0 32px rgba(0,255,198,0.5)"}
-                  onMouseLeave={e => e.currentTarget.style.boxShadow = "0 0 20px rgba(0,255,198,0.22)"}>Get started</button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <main>
-        <section className="relative max-w-[1280px] mx-auto px-6 md:px-10 pt-24 pb-6 text-center">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] pointer-events-none" style={{ background: "radial-gradient(ellipse,rgba(0,255,198,0.055) 0%,transparent 65%)" }} />
-
+        <section className="relative max-w-page mx-auto px-6 md:px-10 pt-[120px] pb-8 text-center">
+          <div className="absolute top-8 left-1/2 -translate-x-1/2 w-[760px] h-[420px] pointer-events-none" style={{ background:"radial-gradient(ellipse,rgba(0,255,198,0.065) 0%,transparent 65%)", animation:"glow-pulse 3s ease-in-out infinite" }} />
           <FadeUp>
-            <div className="inline-flex items-center gap-2.5 mb-10 font-mono text-[10.5px] rounded-full px-4 py-1.5 border border-white/[0.07] transition-all cursor-default hover:border-white/[0.12]" style={{ background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.38)", backdropFilter: "blur(10px)" }}>
-              <span className="w-[6px] h-[6px] rounded-full bg-accent" style={{ boxShadow: "0 0 8px rgba(0,255,198,0.7)", animation: "pulse 2s ease-in-out infinite" }} />
-              {feed.connected ? "Streaming live Binance data" : feed.simulated ? "Simulated market feed" : "Connecting to market feed…"}
-              <span className="text-white/[0.15] font-light">·</span>
-              <span className="text-white/25">v2.0</span>
+            <div className="inline-flex items-center gap-2.5 mb-10 font-mono text-[10.5px] rounded-full px-4 py-1.5 border border-white/[0.07] hover:border-white/[0.14] transition-colors cursor-default" style={{ background:"rgba(255,255,255,0.032)", backdropFilter:"blur(10px)", color:"rgba(255,255,255,0.42)" }}>
+              <span className="w-[7px] h-[7px] rounded-full bg-success flex-shrink-0" style={{ boxShadow:"0 0 8px rgba(0,214,143,0.75)", animation:"pulse-dot 2.2s ease-in-out infinite" }} />
+              {feed.connected?"Streaming live market data":feed.simulated?"Simulated market feed active":"Connecting to market feed…"}
+              <span className="text-white/15">·</span>
+              <span className="text-white/28">v2.0</span>
             </div>
           </FadeUp>
-
           <FadeUp delay={70}>
-            <h1 className="text-[58px] md:text-[76px] font-bold leading-[1.03] tracking-[-0.025em] mb-6">
-              <span className="text-white">The trading terminal</span><br />
-              <span style={{ background: "linear-gradient(125deg,#00FFC6 0%,#00D4FF 45%,#818CF8 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", filter: "drop-shadow(0 0 50px rgba(0,255,198,0.2))" }}>built for professionals</span>
+            <h1 className="text-[58px] md:text-[72px] font-bold leading-[1.02] tracking-[-0.025em] text-white mb-6">
+              The terminal for<br />
+              <span className="gradient-text" style={{ filter:"drop-shadow(0 0 48px rgba(0,255,198,0.22))" }}>serious traders</span>
             </h1>
           </FadeUp>
-
           <FadeUp delay={140}>
-            <p className="text-white/35 text-[17px] md:text-[19px] leading-[1.65] max-w-[540px] mx-auto mb-10 font-light tracking-[-0.01em]">
-              Sub-10ms Binance WebSocket feeds. Institutional-grade order book and chart UI. Supabase auth and Stripe billing — production-ready out of the box.
+            <p className="text-white/34 text-[17px] md:text-[19px] max-w-[520px] mx-auto mb-10 leading-[1.65] font-light tracking-[-0.01em]">
+              Real-time Binance WebSocket data. Pro-grade terminal UI.<br className="hidden md:block" />
+              Stripe billing and Supabase auth — ready to ship.
             </p>
           </FadeUp>
-
-          <FadeUp delay={210}>
+          <FadeUp delay={200}>
             <div className="flex flex-wrap items-center justify-center gap-3 mb-3">
-              <button onClick={() => navigate("/auth?tab=signup")}
-                className="group relative overflow-hidden text-[13px] font-bold px-8 py-3.5 rounded-xl transition-all duration-200 active:scale-[0.97]"
-                style={{ background: "#00FFC6", color: "#040812", boxShadow: "0 0 28px rgba(0,255,198,0.28),0 2px 8px rgba(0,0,0,0.4)" }}
-                onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 0 48px rgba(0,255,198,0.55),0 2px 8px rgba(0,0,0,0.4)"; e.currentTarget.style.transform = "scale(1.025)"; }}
-                onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 0 28px rgba(0,255,198,0.28),0 2px 8px rgba(0,0,0,0.4)"; e.currentTarget.style.transform = "scale(1)"; }}>
-                <span className="relative z-10">Start free 14-day trial →</span>
-                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </button>
-              <button onClick={() => navigate("/pricing")}
-                className="text-[13px] font-medium px-8 py-3.5 rounded-xl border border-white/[0.1] text-white/45 transition-all duration-200 hover:border-white/[0.22] hover:text-white/70"
-                style={{ background: "rgba(255,255,255,0.025)", backdropFilter: "blur(10px)" }}
-                onMouseEnter={e => e.currentTarget.style.boxShadow = "0 0 20px rgba(255,255,255,0.04)"}
-                onMouseLeave={e => e.currentTarget.style.boxShadow = "none"}>
-                View pricing
-              </button>
+              <button onClick={() => navigate("/auth?tab=signup")} className="btn-primary text-[13.5px] font-bold px-8 py-3.5">Start 14-day free trial →</button>
+              <button onClick={() => navigate("/pricing")} className="btn-ghost text-[13.5px] font-medium px-8 py-3.5">View pricing</button>
             </div>
             <p className="text-[11px] font-mono text-white/18 tracking-wide">No credit card required · Cancel anytime</p>
           </FadeUp>
-
-          <FadeUp delay={300}>
-            <TradingTerminal price={btc?.price} />
-          </FadeUp>
+          <FadeUp delay={280}><TerminalMockup livePrice={btc?.price} /></FadeUp>
         </section>
 
         <FadeUp>
-          <section className="max-w-[1280px] mx-auto px-6 md:px-10 py-14 border-t border-white/[0.04]">
-            <p className="text-center text-[9.5px] font-mono text-white/12 tracking-[0.25em] uppercase mb-7">Used by traders at leading institutions</p>
-            <div className="flex flex-wrap items-center justify-center gap-8 md:gap-14">
-              {["Citadel Securities","Jump Trading","DRW Cumberland","Two Sigma","GSR Markets","Wintermute"].map(n => (
-                <span key={n} className="text-white/10 text-[12px] font-bold tracking-[-0.01em] hover:text-white/22 transition-colors cursor-default select-none">{n}</span>
+          <section className="max-w-page mx-auto px-6 md:px-10 py-16 border-t border-white/[0.04]">
+            <p className="text-center text-[9.5px] font-mono text-white/14 tracking-[0.28em] uppercase mb-8">Trusted by pro traders at</p>
+            <div className="flex flex-wrap items-center justify-center gap-10 md:gap-16">
+              {["Citadel Securities","Jump Trading","DRW Cumberland","Two Sigma","GSR Markets","Wintermute"].map(name => (
+                <span key={name} className="text-white/[0.11] font-bold text-[12.5px] tracking-tight hover:text-white/[0.24] transition-colors cursor-default select-none grayscale">{name}</span>
               ))}
             </div>
           </section>
         </FadeUp>
 
-        <FadeUp>
-          <section className="max-w-[1280px] mx-auto px-6 md:px-10 py-14 border-t border-white/[0.04]">
-            <div className="flex flex-wrap items-center justify-center gap-12 md:gap-20">
-              <Stat value="<10ms" label="feed latency" />
-              <Stat value="6+" label="live pairs" />
-              <Stat value="99.9%" label="uptime SLA" />
-              <Stat value="3-tier" label="billing gates" />
-            </div>
-          </section>
-        </FadeUp>
+        <section className="max-w-page mx-auto px-6 md:px-10 py-16 border-t border-white/[0.04]">
+          <div className="flex flex-wrap items-center justify-center gap-14 md:gap-24">
+            <StatBadge value="<10ms" label="feed latency" />
+            <StatBadge value="6+" label="live pairs" />
+            <StatBadge value="99.9%" label="uptime SLA" />
+            <StatBadge value="3-tier" label="billing gates" />
+          </div>
+        </section>
 
-        <section className="max-w-[1280px] mx-auto px-6 md:px-10 py-20 border-t border-white/[0.04]">
+        <section className="max-w-page mx-auto px-6 md:px-10 py-[120px] border-t border-white/[0.04]">
           <FadeUp>
-            <div className="text-center mb-14">
-              <h2 className="text-[30px] md:text-[34px] font-bold text-white tracking-[-0.02em] mb-3">Engineered for institutional performance</h2>
-              <p className="text-white/28 text-[14px] max-w-[480px] mx-auto leading-relaxed">Every layer is designed for speed, reliability, and professional-grade UX.</p>
+            <div className="text-center mb-16">
+              <h2 className="text-[30px] md:text-[36px] font-bold text-white tracking-[-0.022em] mb-4">Built for institutional performance</h2>
+              <p className="text-white/28 text-[14.5px] max-w-[460px] mx-auto leading-relaxed">Every layer engineered for speed, reliability, and professional-grade UX.</p>
             </div>
           </FadeUp>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card delay={0} icon="⚡" tag="WEBSOCKET" title="Sub-10ms data latency" desc="Direct Binance WebSocket streams with exponential-backoff reconnect, simulated fallback, and real-time tick data across 6+ trading pairs." />
-            <Card delay={80} icon="◈" tag="PRO UI" title="Institutional terminal UI" desc="Full-featured order book with depth visualization, candlestick charts, trade tape, volume histogram, and funding rate dashboard." />
-            <Card delay={160} icon="⬡" tag="FULL STACK" title="Auth & billing on day one" desc="Supabase JWT sessions with RLS, Stripe Checkout + Customer Portal, and per-feature paywall gates. Deploy in hours, not weeks." />
+            <FeatureCard delay={0} icon="⚡" tag="WS STREAM" title="Sub-10ms latency" desc="Direct Binance WebSocket streams with exponential-backoff reconnect, simulated fallback, and real-time tick data across 6+ trading pairs without polling." />
+            <FeatureCard delay={90} icon="◈" tag="PRO TERMINAL" title="Institutional UI" desc="Full-featured order book with depth bars, live candlestick charts, trade tape, volume histogram, and funding rate panel — the full Bloomberg experience in a browser." />
+            <FeatureCard delay={180} icon="⬡" tag="FULL STACK" title="Production-ready auth & billing" desc="Supabase JWT auth with RLS, Stripe Checkout + Customer Portal, and per-feature paywall gates. Ship your SaaS in hours — not weeks." />
           </div>
         </section>
 
-        <section className="max-w-[1280px] mx-auto px-6 md:px-10 py-20 border-t border-white/[0.04]">
+        <section className="max-w-page mx-auto px-6 md:px-10 py-[120px] border-t border-white/[0.04]">
           <FadeUp>
             <div className="max-w-[440px] mx-auto text-center">
-              <div className="inline-block text-[9px] font-mono tracking-[0.2em] border rounded-full px-3 py-1 mb-6" style={{ color: "rgba(0,255,198,0.5)", borderColor: "rgba(0,255,198,0.15)", background: "rgba(0,255,198,0.04)" }}>EARLY ACCESS</div>
-              <h2 className="text-[24px] font-bold text-white tracking-tight mb-2">Get 3 months free on Pro</h2>
-              <p className="text-white/25 text-[13px] font-mono mb-8">Join the waitlist — limited spots before public launch.</p>
-              {wl === "done" ? (
-                <div className="flex items-center justify-center gap-2 text-accent font-mono text-[13px]">
-                  <span style={{ textShadow: "0 0 12px rgba(0,255,198,0.4)" }}>✓</span>
-                  <span>You're on the list. We'll be in touch.</span>
-                </div>
+              <div className="inline-block text-[8.5px] font-mono tracking-[0.22em] border rounded-full px-3 py-1 mb-6" style={{ color:"rgba(0,255,198,0.55)", borderColor:"rgba(0,255,198,0.16)", background:"rgba(0,255,198,0.045)" }}>EARLY ACCESS</div>
+              <h2 className="text-[26px] font-bold text-white tracking-tight mb-3">Get 3 months free on Pro</h2>
+              <p className="text-white/25 text-[13px] font-mono mb-8 leading-relaxed">Join the waitlist — limited spots before public launch.</p>
+              {wlState==="done" ? (
+                <div className="flex items-center justify-center gap-2 font-mono text-[13px] text-accent" style={{ textShadow:"0 0 12px rgba(0,255,198,0.4)" }}>✓ You're on the list. We'll be in touch.</div>
               ) : (
-                <form onSubmit={joinWaitlist} className="flex gap-2">
-                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="your@email.com"
-                    className="flex-1 text-[13px] text-white placeholder-white/20 rounded-xl px-4 py-2.5 outline-none border border-white/[0.08] focus:border-accent/35 transition-all"
-                    style={{ background: "rgba(255,255,255,0.03)", backdropFilter: "blur(8px)" }} />
-                  <button type="submit" disabled={wl === "loading"}
-                    className="text-[12px] font-bold px-5 py-2.5 rounded-xl disabled:opacity-50 transition-all duration-200"
-                    style={{ background: "#00FFC6", color: "#040812", boxShadow: "0 0 20px rgba(0,255,198,0.2)" }}
-                    onMouseEnter={e => e.currentTarget.style.boxShadow = "0 0 36px rgba(0,255,198,0.48)"}
-                    onMouseLeave={e => e.currentTarget.style.boxShadow = "0 0 20px rgba(0,255,198,0.2)"}
-                  >{wl === "loading" ? "…" : "Join"}</button>
+                <form onSubmit={handleWaitlist} className="flex gap-2">
+                  <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@hedgefund.com"
+                    className="flex-1 text-[13px] text-white placeholder-white/20 rounded-xl px-4 py-2.5 outline-none border border-white/[0.08] focus:border-accent/35 transition-colors"
+                    style={{ background:"rgba(255,255,255,0.03)", backdropFilter:"blur(8px)" }} />
+                  <button type="submit" disabled={wlState==="loading"} className="btn-primary text-[12.5px] font-bold px-5 py-2.5 disabled:opacity-40 flex-shrink-0">{wlState==="loading"?"…":"Join"}</button>
                 </form>
               )}
-              {wl === "error" && <p className="text-[#FF4D4F] font-mono text-[11px] mt-2">Something went wrong — try again.</p>}
+              {wlState==="error" && <p className="text-danger text-[11px] font-mono mt-2">Something went wrong — try again.</p>}
             </div>
           </FadeUp>
         </section>
-      </main>
 
-      <footer className="border-t border-white/[0.04]" style={{ background: "rgba(0,0,0,0.2)" }}>
-        <div className="max-w-[1280px] mx-auto px-6 md:px-10 py-8 flex flex-wrap items-center justify-between gap-4">
-          <span className="font-mono font-bold text-[13px] text-accent" style={{ textShadow: "0 0 16px rgba(0,255,198,0.3)" }}>GRAVIA</span>
-          <div className="flex items-center gap-6 text-[11px] text-white/20">
-            <Link to="/pricing" className="hover:text-white/45 transition-colors">Pricing</Link>
-            <a href="#" className="hover:text-white/45 transition-colors">Privacy</a>
-            <a href="#" className="hover:text-white/45 transition-colors">Terms</a>
+        <footer className="border-t border-white/[0.04]" style={{ background:"rgba(0,0,0,0.22)" }}>
+          <div className="max-w-page mx-auto px-6 md:px-10 py-8 flex flex-wrap items-center justify-between gap-4">
+            <span className="font-mono font-bold text-[14px] text-accent" style={{ textShadow:"0 0 18px rgba(0,255,198,0.35)" }}>GRAVIA</span>
+            <div className="flex items-center gap-7 text-[11.5px] text-white/22">
+              <Link to="/pricing" className="hover:text-white/52 transition-colors">Pricing</Link>
+              <a href="#" className="hover:text-white/52 transition-colors">Privacy</a>
+              <a href="#" className="hover:text-white/52 transition-colors">Terms</a>
+              <a href="#" className="hover:text-white/52 transition-colors">Docs</a>
+            </div>
+            <span className="text-[11px] font-mono text-white/14">© 2026 Gravia. All rights reserved.</span>
           </div>
-          <span className="text-[11px] font-mono text-white/12">© 2026 Gravia. All rights reserved.</span>
-        </div>
-      </footer>
+        </footer>
+      </div>
     </div>
   );
 }
