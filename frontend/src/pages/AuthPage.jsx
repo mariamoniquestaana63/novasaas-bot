@@ -27,7 +27,7 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-surface flex flex-col items-center justify-center px-4 font-mono">
-      <Link to="/" className="text-[#00ff88] font-bold text-lg mb-10">GRAVIA</Link>
+      <Link to="/" className="text-[#00ff88] font-bold text-lg mb-10">BAYESIAN</Link>
       <div className="w-full max-w-sm bg-surface2 border border-white/10 rounded-xl overflow-hidden">
         <div className="flex border-b border-white/5">
           {["login", "signup"].map(t => (

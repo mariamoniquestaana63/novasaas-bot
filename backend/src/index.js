@@ -30,7 +30,9 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
     console.error("[Webhook] Bad signature:", err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
+
   const obj = event.data.object;
+
   if (event.type === "checkout.session.completed" && obj.mode === "subscription") {
     const userId = obj.metadata?.user_id;
     if (userId) {
@@ -38,11 +40,13 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
       await upsertSubscription(userId, obj.customer, sub);
     }
   }
+
   if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
     const customer = await stripe.customers.retrieve(obj.customer);
     const userId = customer.metadata?.user_id;
     if (userId) await upsertSubscription(userId, obj.customer, obj);
   }
+
   res.json({ received: true });
 });
 
@@ -66,6 +70,7 @@ app.post("/api/checkout", requireAuth, async (req, res) => {
   const { plan } = req.body;
   const priceId = PLANS[plan];
   if (!priceId) return res.status(400).json({ error: `Unknown plan: ${plan}` });
+
   const customerId = await getOrCreateCustomer(req.user.id, req.user.email);
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
@@ -135,4 +140,4 @@ async function upsertSubscription(userId, customerId, sub) {
 }
 
 const PORT = Number(process.env.PORT) || 4000;
-app.listen(PORT, () => console.log(`✅ Gravia backend :${PORT}`));
+app.listen(PORT, () => console.log(`✅ Bayesian backend :${PORT}`));

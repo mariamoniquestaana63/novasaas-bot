@@ -70,7 +70,7 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen bg-surface font-mono px-6 md:px-12 py-12">
       <div className="flex items-center mb-12">
-        <Link to="/" className="text-[#00ff88] font-bold text-lg">GRAVIA</Link>
+        <Link to="/" className="text-[#00ff88] font-bold text-lg">BAYESIAN</Link>
         <div className="ml-auto">
           {user ? (
             <button onClick={() => navigate("/dashboard")} className="bg-[#00ff88] text-black font-bold px-4 py-1.5 rounded text-xs">Dashboard</button>
@@ -89,7 +89,9 @@ export default function PricingPage() {
           return (
             <div key={p.id} className={`relative bg-surface2 border rounded-xl p-6 flex flex-col transition hover:-translate-y-1 ${p.featured ? "border-[#00ff88]" : "border-white/10"}`}>
               {p.featured && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#00ff88] text-black text-[10px] font-bold px-3 py-1 rounded-full">MOST POPULAR</div>
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#00ff88] text-black text-[10px] font-bold px-3 py-1 rounded-full">
+                  MOST POPULAR
+                </div>
               )}
               <div className="mb-4">
                 <p className="text-gray-400 text-[10px] uppercase tracking-widest mb-1">{p.name}</p>
@@ -108,7 +110,9 @@ export default function PricingPage() {
                 ))}
               </ul>
               {isCurrent ? (
-                <button onClick={openPortal} className="border border-[#00ff88]/40 text-[#00ff88] text-xs font-bold py-2.5 rounded-lg hover:bg-[#00ff88]/5 transition">Manage</button>
+                <button onClick={openPortal} className="border border-[#00ff88]/40 text-[#00ff88] text-xs font-bold py-2.5 rounded-lg hover:bg-[#00ff88]/5 transition">
+                  Manage
+                </button>
               ) : (
                 <button onClick={() => checkout(p.id)} disabled={loading === p.id}
                   className={`text-xs font-bold py-2.5 rounded-lg transition disabled:opacity-60 ${p.featured ? "bg-[#00ff88] text-black hover:opacity-90" : "border border-white/10 text-gray-300 hover:border-white/50"}`}>
