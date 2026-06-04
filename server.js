@@ -1,6 +1,7 @@
 // server.js — NovaSaaS AI OS (Kernel-based)
 const express = require("express");
 const cors = require("cors");
+const http = require("http");
 const { createClient } = require("@supabase/supabase-js");
 const ws = require("ws");
 require("dotenv").config();
@@ -13,9 +14,20 @@ const MCPToolGateway = require("./src/tools/MCPToolGateway");
 const SupportAgent = require("./src/agents/SupportAgent");
 const SalesAgent = require("./src/agents/SalesAgent");
 const ManagerAgent = require("./src/agents/ManagerAgent");
+const BinanceWebSocket = require("./src/tools/BinanceWebSocket");
+
+// Auth & Billing
+const authRoutes = require("./src/api/auth");
+const billingRoutes = require("./src/api/billing");
+const requireAuth = require("./src/middleware/requireAuth");
+const requireSubscription = require("./src/middleware/requireSubscription");
 
 const app = express();
 app.use(cors({ origin: process.env.FRONTEND_URL || "*" }));
+
+// Stripe webhook needs raw body — mount BEFORE express.json()
+app.use("/api/billing/webhook", express.raw({ type: "application/json" }));
+
 app.use(express.json());
 
 // Initialize Supabase Client
@@ -47,8 +59,22 @@ kernel.registerAgent(new SupportAgent());
 kernel.registerAgent(new SalesAgent());
 kernel.registerAgent(new ManagerAgent());
 
+// ── Health check (used by Railway) ────────────────────────────────────────────
+app.get("/health", (_req, res) => res.json({ status: "ok" }));
+
+// ── Static frontend ───────────────────────────────────────────────────────────
+app.use(express.static("public"));
+
+// ── Auth & Billing routes ─────────────────────────────────────────────────────
+app.use("/api/auth", authRoutes);
+app.use("/api/billing", billingRoutes);
+
+// ── Binance live price feed ───────────────────────────────────────────────────
+const defaultSymbols = (process.env.BINANCE_SYMBOLS || "btcusdt,ethusdt,bnbusdt,solusdt").split(",");
+const binance = new BinanceWebSocket(defaultSymbols);
+
 // ── POST /api/chat ────────────────────────────────────────────────────────────
-app.post("/api/chat", async (req, res) => {
+app.post("/api/chat", requireAuth, requireSubscription, async (req, res) => {
   const { messages, session_id } = req.body;
 
   if (!messages || !Array.isArray(messages) || !session_id) {
@@ -102,5 +128,53 @@ app.get("/api/leads", async (req, res) => {
   res.json({ leads: data });
 });
 
+// ── GET /api/prices ───────────────────────────────────────────────────────────
+// Returns the latest cached snapshot for all tracked symbols.
+// Optional query param: ?symbol=BTCUSDT
+app.get("/api/prices", (req, res) => {
+  const { symbol } = req.query;
+  if (symbol) {
+    const data = binance.get(symbol);
+    if (!data) return res.status(404).json({ error: `Symbol ${symbol} not found` });
+    return res.json(data);
+  }
+  res.json(binance.getAll());
+});
+
+// ── WebSocket relay — ws://host/ws/prices ─────────────────────────────────────
+// Clients connect and receive every price tick as a JSON message.
+// Send { "subscribe": ["BTCUSDT","ETHUSDT"] } to filter; omit to receive all.
+const server = http.createServer(app);
+const wss = new ws.Server({ server, path: "/ws/prices" });
+
+wss.on("connection", (client) => {
+  let filter = null; // null = all symbols
+
+  client.on("message", (raw) => {
+    try {
+      const msg = JSON.parse(raw);
+      if (Array.isArray(msg.subscribe)) {
+        filter = msg.subscribe.map((s) => s.toUpperCase());
+        // immediately push current prices for requested symbols
+        filter.forEach((sym) => {
+          const data = binance.get(sym);
+          if (data) client.send(JSON.stringify(data));
+        });
+      }
+    } catch {
+      // ignore malformed control messages
+    }
+  });
+
+  const onTick = (tick) => {
+    if (client.readyState !== ws.OPEN) return;
+    if (filter && !filter.includes(tick.symbol)) return;
+    client.send(JSON.stringify(tick));
+  };
+
+  binance.on("tick", onTick);
+  client.on("close", () => binance.off("tick", onTick));
+});
+
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`✅ AI OS Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`✅ AI OS Server running on port ${PORT}`));

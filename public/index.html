@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NovaSaaS — AI-Powered CRM & Sales Platform</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand: #6366f1;
+      --brand2: #8b5cf6;
+      --brand-dark: #4f46e5;
+      --surface: #0f0f1a;
+      --surface2: #16162a;
+      --surface3: #1e1e35;
+      --border: rgba(255,255,255,0.08);
+      --text: #f1f0ff;
+      --muted: #9ca3af;
+      --green: #10b981;
+      --red: #ef4444;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--surface);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--brand); border-radius: 3px; }
+
+    /* ── Price ticker ── */
+    #ticker-bar {
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 0;
+      overflow: hidden;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+    #ticker-inner {
+      display: inline-flex;
+      gap: 32px;
+      animation: tickerScroll 30s linear infinite;
+    }
+    #ticker-inner:hover { animation-play-state: paused; }
+    @keyframes tickerScroll {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .tick-item { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); }
+    .tick-item .sym { font-weight: 700; color: var(--text); }
+    .tick-item .price { font-weight: 600; }
+    .tick-item .chg.up { color: var(--green); }
+    .tick-item .chg.dn { color: var(--red); }
+
+    /* ── Navbar ── */
+    nav {
+      position: sticky; top: 0; z-index: 1000;
+      background: rgba(15,15,26,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 clamp(16px, 5vw, 64px);
+      display: flex; align-items: center; height: 64px; gap: 24px;
+    }
+    .nav-logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); text-decoration: none; }
+    .nav-logo span { background: linear-gradient(135deg, var(--brand), var(--brand2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .nav-links { display: flex; gap: 28px; margin-left: 32px; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-ctas { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; font-family: inherit; text-decoration: none; padding: 9px 20px; }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--brand); color: var(--text); }
+    .btn-primary { background: linear-gradient(135deg, var(--brand), var(--brand2)); color: #fff; box-shadow: 0 4px 16px rgba(99,102,241,0.35); }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(99,102,241,0.5); }
+    .btn-outline { background: transparent; color: var(--brand); border: 1px solid var(--brand); }
+    .btn-outline:hover { background: var(--brand); color: #fff; }
+    .btn-lg { padding: 14px 32px; font-size: 16px; border-radius: 12px; }
+    .btn-full { width: 100%; }
+
+    /* ── Hero ── */
+    #hero {
+      padding: 100px clamp(16px, 5vw, 64px) 80px;
+      text-align: center;
+      position: relative;
+    }
+    .hero-glow {
+      position: absolute; top: -100px; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 500px;
+      background: radial-gradient(ellipse at center, rgba(99,102,241,0.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 100px; padding: 5px 14px; font-size: 13px; color: #a5b4fc;
+      margin-bottom: 28px;
+    }
+    .hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+    h1 {
+      font-size: clamp(38px, 6vw, 72px);
+      font-weight: 900; line-height: 1.08;
+      letter-spacing: -2px; margin-bottom: 24px;
+    }
+    h1 .grad { background: linear-gradient(135deg, #a5b4fc 0%, #8b5cf6 50%, #6366f1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero-sub { font-size: clamp(16px, 2vw, 20px); color: var(--muted); max-width: 600px; margin: 0 auto 40px; }
+    .hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .hero-stats { display: flex; justify-content: center; gap: 48px; margin-top: 64px; flex-wrap: wrap; }
+    .stat { text-align: center; }
+    .stat-n { font-size: 32px; font-weight: 800; background: linear-gradient(135deg, var(--brand), var(--brand2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .stat-l { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Section ── */
+    section { padding: 80px clamp(16px, 5vw, 64px); }
+    .section-label { font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--brand); margin-bottom: 12px; }
+    .section-title { font-size: clamp(28px, 4vw, 44px); font-weight: 800; letter-spacing: -1px; margin-bottom: 16px; }
+    .section-sub { font-size: 17px; color: var(--muted); max-width: 520px; }
+    .center { text-align: center; }
+    .center .section-sub { margin: 0 auto; }
+
+    /* ── Features grid ── */
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 56px; }
+    .feature-card {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px; transition: border-color 0.2s, transform 0.2s;
+    }
+    .feature-card:hover { border-color: rgba(99,102,241,0.4); transform: translateY(-3px); }
+    .feature-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.2));
+      border: 1px solid rgba(99,102,241,0.25);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; margin-bottom: 16px;
+    }
+    .feature-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .feature-desc { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+    /* ── Live prices section ── */
+    #prices-section { background: var(--surface2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .prices-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 40px; }
+    .price-card {
+      background: var(--surface3); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 6px;
+      transition: border-color 0.2s;
+    }
+    .price-card:hover { border-color: rgba(99,102,241,0.4); }
+    .price-card .sym { font-size: 13px; font-weight: 700; color: var(--muted); }
+    .price-card .live-price { font-size: 26px; font-weight: 800; letter-spacing: -1px; }
+    .price-card .live-change { font-size: 13px; font-weight: 600; }
+    .price-card .live-change.up { color: var(--green); }
+    .price-card .live-change.dn { color: var(--red); }
+    .price-card .vol { font-size: 12px; color: var(--muted); }
+    .ws-status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-top: 12px; }
+    .ws-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+    .ws-dot.live { background: var(--green); animation: pulse 2s infinite; }
+
+    /* ── Pricing ── */
+    .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 56px; max-width: 960px; margin-left: auto; margin-right: auto; }
+    .pricing-card {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 32px; position: relative; transition: transform 0.2s;
+    }
+    .pricing-card:hover { transform: translateY(-4px); }
+    .pricing-card.featured {
+      border-color: var(--brand);
+      background: linear-gradient(160deg, rgba(99,102,241,0.12), var(--surface2));
+    }
+    .featured-badge {
+      position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+      background: linear-gradient(135deg, var(--brand), var(--brand2));
+      color: #fff; font-size: 11px; font-weight: 700; padding: 4px 14px;
+      border-radius: 100px; white-space: nowrap;
+    }
+    .plan-name { font-size: 14px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .plan-price { font-size: 48px; font-weight: 900; letter-spacing: -2px; line-height: 1; }
+    .plan-price sup { font-size: 22px; font-weight: 700; vertical-align: top; margin-top: 10px; display: inline-block; }
+    .plan-price .per { font-size: 14px; font-weight: 400; color: var(--muted); }
+    .plan-desc { font-size: 14px; color: var(--muted); margin: 12px 0 24px; }
+    .plan-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+    .plan-features li { font-size: 14px; display: flex; align-items: center; gap: 10px; }
+    .plan-features li::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; }
+    .plan-features li.no::before { content: '✕'; color: var(--muted); }
+    .plan-features li.no { color: var(--muted); }
+
+    /* ── Testimonials ── */
+    .testimonials-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 48px; }
+    .testimonial-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; padding: 28px; }
+    .t-stars { color: #fbbf24; font-size: 14px; margin-bottom: 14px; }
+    .t-text { font-size: 14px; color: var(--muted); line-height: 1.8; margin-bottom: 20px; font-style: italic; }
+    .t-author { display: flex; align-items: center; gap: 12px; }
+    .t-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; background: linear-gradient(135deg, var(--brand), var(--brand2)); flex-shrink: 0; }
+    .t-name { font-size: 14px; font-weight: 700; }
+    .t-role { font-size: 12px; color: var(--muted); }
+
+    /* ── CTA band ── */
+    #cta-band {
+      background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1));
+      border-top: 1px solid rgba(99,102,241,0.2);
+      border-bottom: 1px solid rgba(99,102,241,0.2);
+      text-align: center; padding: 80px clamp(16px, 5vw, 64px);
+    }
+    #cta-band h2 { font-size: clamp(28px, 4vw, 48px); font-weight: 900; letter-spacing: -1.5px; margin-bottom: 16px; }
+    #cta-band p { font-size: 17px; color: var(--muted); margin-bottom: 36px; }
+
+    /* ── Footer ── */
+    footer {
+      padding: 40px clamp(16px, 5vw, 64px);
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 16px;
+    }
+    .footer-logo { font-size: 18px; font-weight: 800; color: var(--text); }
+    .footer-logo span { background: linear-gradient(135deg, var(--brand), var(--brand2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a { font-size: 13px; color: var(--muted); text-decoration: none; }
+    .footer-links a:hover { color: var(--text); }
+    .footer-copy { font-size: 13px; color: var(--muted); }
+
+    /* ── Auth Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 9000;
+      background: rgba(0,0,0,0.65); backdrop-filter: blur(6px);
+      display: none; align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 36px; width: 100%; max-width: 420px;
+      position: relative; animation: modalIn 0.2s ease;
+    }
+    @keyframes modalIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px;
+      background: var(--surface3); border: none; color: var(--muted); cursor: pointer;
+      border-radius: 8px; width: 32px; height: 32px; font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal h2 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+    .modal .modal-sub { font-size: 14px; color: var(--muted); margin-bottom: 28px; }
+    .modal-tabs { display: flex; gap: 0; background: var(--surface3); border-radius: 10px; padding: 4px; margin-bottom: 24px; }
+    .modal-tab { flex: 1; border: none; background: transparent; color: var(--muted); font-size: 14px; font-weight: 600; cursor: pointer; padding: 8px; border-radius: 8px; transition: all 0.2s; font-family: inherit; }
+    .modal-tab.active { background: var(--brand); color: #fff; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+    .form-group input {
+      width: 100%; background: var(--surface3); border: 1px solid var(--border);
+      border-radius: 10px; padding: 11px 14px; font-size: 14px; color: var(--text);
+      outline: none; font-family: inherit; transition: border-color 0.2s;
+    }
+    .form-group input:focus { border-color: var(--brand); }
+    .form-error { font-size: 13px; color: var(--red); margin-top: 4px; display: none; }
+    .modal-success { text-align: center; padding: 20px 0; display: none; }
+    .modal-success .check { font-size: 48px; margin-bottom: 12px; }
+    .modal-success p { font-size: 15px; color: var(--muted); }
+
+    /* ── User menu ── */
+    #user-menu { display: none; align-items: center; gap: 8px; }
+    #user-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--brand), var(--brand2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+    }
+    #logout-btn { font-size: 13px; color: var(--muted); cursor: pointer; }
+    #logout-btn:hover { color: var(--red); }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--surface3); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 20px; font-size: 14px;
+      opacity: 0; transition: all 0.3s; z-index: 9999; white-space: nowrap;
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.error { border-color: var(--red); color: var(--red); }
+    #toast.success { border-color: var(--green); color: var(--green); }
+
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .hero-stats { gap: 28px; }
+      footer { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Live Ticker ── -->
+<div id="ticker-bar">
+  <div id="ticker-inner">
+    <span class="tick-item"><span class="sym">BTC</span><span class="price" id="t-BTCUSDT">—</span><span class="chg" id="c-BTCUSDT">—</span></span>
+    <span class="tick-item"><span class="sym">ETH</span><span class="price" id="t-ETHUSDT">—</span><span class="chg" id="c-ETHUSDT">—</span></span>
+    <span class="tick-item"><span class="sym">BNB</span><span class="price" id="t-BNBUSDT">—</span><span class="chg" id="c-BNBUSDT">—</span></span>
+    <span class="tick-item"><span class="sym">SOL</span><span class="price" id="t-SOLUSDT">—</span><span class="chg" id="c-SOLUSDT">—</span></span>
+    <!-- duplicated for seamless loop -->
+    <span class="tick-item"><span class="sym">BTC</span><span class="price" id="t2-BTCUSDT">—</span><span class="chg" id="c2-BTCUSDT">—</span></span>
+    <span class="tick-item"><span class="sym">ETH</span><span class="price" id="t2-ETHUSDT">—</span><span class="chg" id="c2-ETHUSDT">—</span></span>
+    <span class="tick-item"><span class="sym">BNB</span><span class="price" id="t2-BNBUSDT">—</span><span class="chg" id="c2-BNBUSDT">—</span></span>
+    <span class="tick-item"><span class="sym">SOL</span><span class="price" id="t2-SOLUSDT">—</span><span class="chg" id="c2-SOLUSDT">—</span></span>
+  </div>
+</div>
+
+<!-- ── Navbar ── -->
+<nav>
+  <a href="#" class="nav-logo">Nova<span>SaaS</span></a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#prices-section">Markets</a>
+    <a href="#pricing">Pricing</a>
+  </div>
+  <div class="nav-ctas" id="auth-ctas">
+    <button class="btn btn-ghost" onclick="openModal('login')">Log in</button>
+    <button class="btn btn-primary" onclick="openModal('signup')">Start free trial</button>
+  </div>
+  <div id="user-menu">
+    <div id="user-avatar">U</div>
+    <span id="logout-btn" onclick="logout()">Log out</span>
+  </div>
+</nav>
+
+<!-- ── Hero ── -->
+<section id="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-badge"><span class="dot"></span> Now with live crypto market data</div>
+  <h1>The AI OS for<br><span class="grad">Sales & Support</span></h1>
+  <p class="hero-sub">NovaSaaS combines intelligent AI agents, real-time market data, and a full CRM into one platform built for modern revenue teams.</p>
+  <div class="hero-btns">
+    <button class="btn btn-primary btn-lg" onclick="openModal('signup')">Start 14-day free trial</button>
+    <a href="#features" class="btn btn-ghost btn-lg">See how it works</a>
+  </div>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-n">2,400+</div><div class="stat-l">Teams onboarded</div></div>
+    <div class="stat"><div class="stat-n">98%</div><div class="stat-l">Customer satisfaction</div></div>
+    <div class="stat"><div class="stat-n">3.2×</div><div class="stat-l">Average pipeline growth</div></div>
+    <div class="stat"><div class="stat-n">< 2 min</div><div class="stat-l">Average response time</div></div>
+  </div>
+</section>
+
+<!-- ── Features ── -->
+<section id="features">
+  <div class="center">
+    <div class="section-label">Platform</div>
+    <h2 class="section-title">Everything your revenue team needs</h2>
+    <p class="section-sub">From first touch to closed deal — one AI-powered platform handles it all.</p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🤖</div>
+      <div class="feature-title">AI Support Agent (Aria)</div>
+      <div class="feature-desc">24/7 intelligent support powered by Claude. Handles tickets, escalates edge cases, and captures leads automatically.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📈</div>
+      <div class="feature-title">Sales Intelligence</div>
+      <div class="feature-desc">AI-driven lead scoring, qualification, and follow-up sequences. Your pipeline never goes cold.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-title">Real-Time Market Data</div>
+      <div class="feature-desc">Live crypto and asset price feeds via Binance WebSocket. Keep your team informed with zero latency.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔐</div>
+      <div class="feature-title">Secure Auth & Billing</div>
+      <div class="feature-desc">Supabase-powered auth with JWT sessions. Stripe subscription management with automatic seat provisioning.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🗃️</div>
+      <div class="feature-title">Smart Context Memory</div>
+      <div class="feature-desc">Agents remember every conversation. Persistent session context powered by vector search and Supabase.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔗</div>
+      <div class="feature-title">MCP Tool Ecosystem</div>
+      <div class="feature-desc">Connect any tool via Model Context Protocol. CRMs, calendars, databases — agents use them all natively.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Live Prices ── -->
+<section id="prices-section">
+  <div style="display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+    <div>
+      <div class="section-label">Live Markets</div>
+      <h2 class="section-title">Real-time crypto prices</h2>
+      <p class="section-sub">Powered by Binance WebSocket — ticks as they happen.</p>
+      <div class="ws-status">
+        <div class="ws-dot" id="ws-dot"></div>
+        <span id="ws-label">Connecting…</span>
+      </div>
+    </div>
+  </div>
+  <div class="prices-grid" id="prices-grid">
+    <div class="price-card" id="card-BTCUSDT"><div class="sym">BTCUSDT</div><div class="live-price">—</div><div class="live-change">—</div><div class="vol">Vol: —</div></div>
+    <div class="price-card" id="card-ETHUSDT"><div class="sym">ETHUSDT</div><div class="live-price">—</div><div class="live-change">—</div><div class="vol">Vol: —</div></div>
+    <div class="price-card" id="card-BNBUSDT"><div class="sym">BNBUSDT</div><div class="live-price">—</div><div class="live-change">—</div><div class="vol">Vol: —</div></div>
+    <div class="price-card" id="card-SOLUSDT"><div class="sym">SOLUSDT</div><div class="live-price">—</div><div class="live-change">—</div><div class="vol">Vol: —</div></div>
+  </div>
+</section>
+
+<!-- ── Pricing ── -->
+<section id="pricing">
+  <div class="center">
+    <div class="section-label">Pricing</div>
+    <h2 class="section-title">Simple, transparent pricing</h2>
+    <p class="section-sub">14-day free trial on all plans. No credit card required to start.</p>
+  </div>
+  <div class="pricing-grid">
+    <div class="pricing-card">
+      <div class="plan-name">Starter</div>
+      <div class="plan-price"><sup>$</sup>29<span class="per">/mo</span></div>
+      <div class="plan-desc">Perfect for small teams getting started with AI-driven CRM.</div>
+      <ul class="plan-features">
+        <li>3 team members</li>
+        <li>1,000 contacts</li>
+        <li>Aria AI support agent</li>
+        <li>Live market ticker</li>
+        <li class="no">API access</li>
+        <li class="no">Priority support</li>
+      </ul>
+      <button class="btn btn-outline btn-full" onclick="startCheckout('starter')">Start free trial</button>
+    </div>
+
+    <div class="pricing-card featured">
+      <div class="featured-badge">Most Popular</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-price"><sup>$</sup>79<span class="per">/mo</span></div>
+      <div class="plan-desc">For growing sales teams that need more power and integrations.</div>
+      <ul class="plan-features">
+        <li>15 team members</li>
+        <li>50,000 contacts</li>
+        <li>Aria AI support agent</li>
+        <li>Real-time WebSocket prices</li>
+        <li>API access</li>
+        <li>Priority support</li>
+      </ul>
+      <button class="btn btn-primary btn-full" onclick="startCheckout('pro')">Start free trial</button>
+    </div>
+
+    <div class="pricing-card">
+      <div class="plan-name">Enterprise</div>
+      <div class="plan-price" style="font-size:32px;letter-spacing:-1px;margin-top:8px">Custom</div>
+      <div class="plan-desc">Unlimited scale, SSO, dedicated manager, SLA guarantees.</div>
+      <ul class="plan-features">
+        <li>Unlimited members</li>
+        <li>Unlimited contacts</li>
+        <li>Custom AI agents</li>
+        <li>Custom data feeds</li>
+        <li>SSO / SAML</li>
+        <li>Dedicated success manager</li>
+      </ul>
+      <button class="btn btn-ghost btn-full" onclick="openModal('signup')">Contact sales</button>
+    </div>
+  </div>
+</section>
+
+<!-- ── Testimonials ── -->
+<section id="testimonials">
+  <div class="center">
+    <div class="section-label">Customers</div>
+    <h2 class="section-title">Loved by revenue teams</h2>
+  </div>
+  <div class="testimonials-grid">
+    <div class="testimonial-card">
+      <div class="t-stars">★★★★★</div>
+      <div class="t-text">"Aria handles 80% of our support tickets without a human. Our team can finally focus on selling instead of answering the same questions."</div>
+      <div class="t-author"><div class="t-avatar">S</div><div><div class="t-name">Sarah K.</div><div class="t-role">VP Sales, Fintech startup</div></div></div>
+    </div>
+    <div class="testimonial-card">
+      <div class="t-stars">★★★★★</div>
+      <div class="t-text">"The live market data integration is a game-changer for our crypto trading clients. Real-time prices inside the CRM — brilliant."</div>
+      <div class="t-author"><div class="t-avatar">M</div><div><div class="t-name">Marcus T.</div><div class="t-role">Head of Growth, CryptoDesk</div></div></div>
+    </div>
+    <div class="testimonial-card">
+      <div class="t-stars">★★★★★</div>
+      <div class="t-text">"Onboarded in 20 minutes, had our first AI-qualified lead within the hour. The ROI on this platform is insane."</div>
+      <div class="t-author"><div class="t-avatar">J</div><div><div class="t-name">Jenna R.</div><div class="t-role">Founder, B2B SaaS</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA Band ── -->
+<div id="cta-band">
+  <h2>Ready to grow faster with AI?</h2>
+  <p>Join 2,400+ teams using NovaSaaS to close more deals and delight every customer.</p>
+  <button class="btn btn-primary btn-lg" onclick="openModal('signup')">Start your free 14-day trial</button>
+</div>
+
+<!-- ── Footer ── -->
+<footer>
+  <div class="footer-logo">Nova<span>SaaS</span></div>
+  <div class="footer-links">
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="mailto:support@novasaas.com">Support</a>
+  </div>
+  <div class="footer-copy">© 2026 NovaSaaS. All rights reserved.</div>
+</footer>
+
+<!-- ── Auth Modal ── -->
+<div class="modal-overlay" id="auth-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h2 id="modal-title">Welcome to NovaSaaS</h2>
+    <p class="modal-sub" id="modal-sub">14-day free trial. No card required.</p>
+    <div class="modal-tabs">
+      <button class="modal-tab active" id="tab-signup" onclick="switchTab('signup')">Sign up</button>
+      <button class="modal-tab" id="tab-login" onclick="switchTab('login')">Log in</button>
+    </div>
+
+    <div id="signup-form">
+      <div class="form-group">
+        <label>Full name</label>
+        <input type="text" id="su-name" placeholder="Jane Smith" />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="su-email" placeholder="jane@company.com" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="su-pass" placeholder="8+ characters" />
+      </div>
+      <div id="su-error" class="form-error"></div>
+      <button class="btn btn-primary btn-full" style="margin-top:4px" onclick="doSignup()">Create account</button>
+    </div>
+
+    <div id="login-form" style="display:none">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="li-email" placeholder="jane@company.com" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="li-pass" placeholder="Your password" />
+      </div>
+      <div id="li-error" class="form-error"></div>
+      <button class="btn btn-primary btn-full" style="margin-top:4px" onclick="doLogin()">Log in</button>
+    </div>
+
+    <div class="modal-success" id="modal-success">
+      <div class="check">✅</div>
+      <p id="success-msg">Account created! Check your email to confirm.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div id="toast"></div>
+
+<!-- ── Aria widget ── -->
+<script src="/widget.js"></script>
+
+<script>
+  // ── Config ──────────────────────────────────────────────────────────────────
+  const API = '';  // same origin
+  let session = JSON.parse(localStorage.getItem('ns_session') || 'null');
+
+  // ── Auth state ──────────────────────────────────────────────────────────────
+  function applyAuthState() {
+    const loggedIn = !!session?.access_token;
+    document.getElementById('auth-ctas').style.display = loggedIn ? 'none' : 'flex';
+    const um = document.getElementById('user-menu');
+    um.style.display = loggedIn ? 'flex' : 'none';
+    if (loggedIn) {
+      const email = session.user?.email || '';
+      document.getElementById('user-avatar').textContent = email[0]?.toUpperCase() || 'U';
+    }
+  }
+  applyAuthState();
+
+  // ── Modal ───────────────────────────────────────────────────────────────────
+  function openModal(tab) {
+    document.getElementById('auth-modal').classList.add('open');
+    document.getElementById('modal-success').style.display = 'none';
+    document.getElementById('signup-form').style.display = tab === 'signup' ? '' : 'none';
+    document.getElementById('login-form').style.display = tab === 'login' ? '' : 'none';
+    document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+    document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+    clearErrors();
+  }
+  function closeModal() { document.getElementById('auth-modal').classList.remove('open'); }
+  document.getElementById('auth-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+  function switchTab(tab) {
+    openModal(tab);
+  }
+
+  function clearErrors() {
+    ['su-error','li-error'].forEach(id => {
+      const el = document.getElementById(id);
+      el.style.display = 'none'; el.textContent = '';
+    });
+  }
+
+  function showError(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg; el.style.display = 'block';
+  }
+
+  // ── Sign up ─────────────────────────────────────────────────────────────────
+  async function doSignup() {
+    clearErrors();
+    const name = document.getElementById('su-name').value.trim();
+    const email = document.getElementById('su-email').value.trim();
+    const password = document.getElementById('su-pass').value;
+    if (!name || !email || !password) return showError('su-error', 'All fields are required.');
+    if (password.length < 8) return showError('su-error', 'Password must be at least 8 characters.');
+
+    try {
+      const res = await fetch(`${API}/api/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) return showError('su-error', data.error || 'Signup failed.');
+      document.getElementById('signup-form').style.display = 'none';
+      document.getElementById('modal-success').style.display = 'block';
+      document.getElementById('success-msg').textContent = 'Account created! Check your email to confirm your address.';
+      if (data.session) { session = data.session; localStorage.setItem('ns_session', JSON.stringify(session)); applyAuthState(); }
+    } catch { showError('su-error', 'Network error. Please try again.'); }
+  }
+
+  // ── Log in ──────────────────────────────────────────────────────────────────
+  async function doLogin() {
+    clearErrors();
+    const email = document.getElementById('li-email').value.trim();
+    const password = document.getElementById('li-pass').value;
+    if (!email || !password) return showError('li-error', 'Email and password are required.');
+
+    try {
+      const res = await fetch(`${API}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) return showError('li-error', data.error || 'Login failed.');
+      session = data.session;
+      localStorage.setItem('ns_session', JSON.stringify(session));
+      applyAuthState();
+      closeModal();
+      toast('Welcome back!', 'success');
+    } catch { showError('li-error', 'Network error. Please try again.'); }
+  }
+
+  // ── Log out ─────────────────────────────────────────────────────────────────
+  async function logout() {
+    if (session?.access_token) {
+      await fetch(`${API}/api/auth/logout`, {
+        method: 'POST', headers: { Authorization: `Bearer ${session.access_token}` }
+      }).catch(() => {});
+    }
+    session = null;
+    localStorage.removeItem('ns_session');
+    applyAuthState();
+    toast('Logged out.', 'success');
+  }
+
+  // ── Stripe checkout ─────────────────────────────────────────────────────────
+  async function startCheckout(plan) {
+    if (!session?.access_token) { openModal('signup'); return; }
+    try {
+      const res = await fetch(`${API}/api/billing/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ plan }),
+      });
+      const data = await res.json();
+      if (data.url) { window.location.href = data.url; }
+      else toast(data.error || 'Could not start checkout.', 'error');
+    } catch { toast('Network error.', 'error'); }
+  }
+
+  // ── Toast ───────────────────────────────────────────────────────────────────
+  function toast(msg, type = '') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `show ${type}`;
+    setTimeout(() => { el.className = ''; }, 3000);
+  }
+
+  // ── Binance WebSocket prices ─────────────────────────────────────────────────
+  const wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
+  const wsUrl = `${wsProto}://${location.host}/ws/prices`;
+  const symbols = ['BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT'];
+
+  function fmt(n) { return n >= 1000 ? n.toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2}) : n.toFixed(4); }
+  function fmtVol(v) { if (v >= 1e9) return (v/1e9).toFixed(2)+'B'; if (v >= 1e6) return (v/1e6).toFixed(2)+'M'; return v.toFixed(0); }
+
+  function updateCard(d) {
+    const card = document.getElementById(`card-${d.symbol}`);
+    if (!card) return;
+    const els = card.querySelectorAll('div');
+    // sym, live-price, live-change, vol
+    els[1].textContent = '$' + fmt(d.price);
+    const up = d.change24h >= 0;
+    els[2].textContent = (up ? '▲ +' : '▼ ') + d.change24h.toFixed(2) + '%';
+    els[2].className = 'live-change ' + (up ? 'up' : 'dn');
+    els[3].textContent = 'Vol: ' + fmtVol(d.volume24h);
+
+    // ticker
+    ['t-','t2-'].forEach(pre => {
+      const tp = document.getElementById(pre + d.symbol);
+      const cp = document.getElementById('c' + pre.replace('t','') + d.symbol);
+      if (tp) tp.textContent = '$' + fmt(d.price);
+      if (cp) { cp.textContent = (up ? '+' : '') + d.change24h.toFixed(2) + '%'; cp.className = 'chg ' + (up ? 'up' : 'dn'); }
+    });
+  }
+
+  function connectWS() {
+    const wsDot = document.getElementById('ws-dot');
+    const wsLabel = document.getElementById('ws-label');
+    let retryDelay = 2000;
+    let ws;
+
+    function connect() {
+      ws = new WebSocket(wsUrl);
+      ws.onopen = () => {
+        wsDot.className = 'ws-dot live';
+        wsLabel.textContent = 'Live';
+        retryDelay = 2000;
+        ws.send(JSON.stringify({ subscribe: symbols }));
+      };
+      ws.onmessage = (e) => { try { updateCard(JSON.parse(e.data)); } catch {} };
+      ws.onclose = () => {
+        wsDot.className = 'ws-dot';
+        wsLabel.textContent = 'Reconnecting…';
+        setTimeout(connect, retryDelay);
+        retryDelay = Math.min(retryDelay * 2, 30000);
+      };
+      ws.onerror = () => ws.close();
+    }
+
+    connect();
+  }
+
+  connectWS();
+</script>
+</body>
+</html>

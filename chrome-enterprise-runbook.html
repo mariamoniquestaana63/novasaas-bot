@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chrome Enterprise Bundle — IT Admin Runbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #070B12;
+  color: #CDD5E0;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  line-height: 1.6;
+}
+::selection { background: rgba(56,189,248,0.2); color: #fff; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 99px; }
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.024) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.024) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 90% 45% at 50% -5%, rgba(14,30,55,0.95) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 95%, rgba(56,189,248,0.03) 0%, transparent 60%);
+}
+@keyframes loadbar {
+  0%   { width:0%;   opacity:1; }
+  40%  { width:40%; }
+  75%  { width:72%; }
+  95%  { width:97%; }
+  100% { width:100%; opacity:0; }
+}
+#loadbar {
+  position: fixed; top: 0; left: 0; height: 2px; z-index: 999;
+  background: linear-gradient(90deg, #38BDF8, #818CF8);
+  box-shadow: 0 0 10px rgba(56,189,248,0.6);
+  animation: loadbar 1.5s cubic-bezier(.4,0,.2,1) forwards;
+}
+.page { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; padding: 40px 24px 80px; }
+.card {
+  background: rgba(255,255,255,0.016);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 32px rgba(0,0,0,0.35);
+  padding: 24px;
+  margin-bottom: 12px;
+}
+.card:hover { border-color: rgba(255,255,255,0.09); }
+h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; color: #F1F5F9; }
+h2 { font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; color: #F1F5F9; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+h2 svg { flex-shrink: 0; }
+p { font-size: 13.5px; color: #94A3B8; line-height: 1.7; }
+.mono { font-family: 'JetBrains Mono', monospace; font-size: 11px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.07); color: #94A3B8; padding: 1px 6px; border-radius: 4px; }
+.badge { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 9px; border-radius: 99px; border: 1px solid; }
+.badge-blue  { color: #38BDF8; border-color: rgba(56,189,248,0.22);  background: rgba(56,189,248,0.06); }
+.badge-green { color: #34D399; border-color: rgba(52,211,153,0.22);  background: rgba(52,211,153,0.06); }
+.badge-amber { color: #FBBF24; border-color: rgba(251,191,36,0.22);  background: rgba(251,191,36,0.06); }
+.header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+.logo-row { display: flex; align-items: center; gap: 14px; }
+.logo-icon { width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg,#1E3A5F,#1E2D4A); border: 1px solid rgba(56,189,248,0.2); box-shadow: 0 0 20px rgba(56,189,248,0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.header-meta { font-size: 11.5px; color: #475569; font-family: 'JetBrains Mono', monospace; margin-top: 4px; display: flex; align-items: center; gap: 10px; }
+.header-meta span::before { content: '·'; margin-right: 10px; color: #2D3748; }
+.header-meta span:first-child::before { display: none; }
+.btn-download { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; border-radius: 10px; font-size: 12.5px; font-weight: 600; text-decoration: none; transition: all 0.18s ease; white-space: nowrap; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.22); color: #38BDF8; box-shadow: 0 0 16px rgba(56,189,248,0.08); }
+.btn-download:hover { background: rgba(56,189,248,0.16); border-color: rgba(56,189,248,0.38); box-shadow: 0 0 24px rgba(56,189,248,0.18); transform: translateY(-1px); }
+.btn-download:active { transform: translateY(0); }
+.data-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.data-table thead tr { border-bottom: 1px solid rgba(255,255,255,0.06); }
+.data-table thead th { padding: 0 12px 10px; text-align: left; font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #475569; }
+.data-table thead th:first-child { padding-left: 0; }
+.data-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.035); transition: background 0.15s; }
+.data-table tbody tr:last-child { border-bottom: none; }
+.data-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+.data-table tbody td { padding: 11px 12px; color: #94A3B8; vertical-align: top; }
+.data-table tbody td:first-child { padding-left: 0; color: #CBD5E1; font-weight: 500; }
+.data-table .cell-mono { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #64748B; }
+.warning { border-radius: 14px; border: 1px solid rgba(251,191,36,0.18); background: rgba(251,191,36,0.04); padding: 14px 16px; margin-bottom: 12px; display: flex; gap: 11px; align-items: flex-start; }
+.warning svg { flex-shrink: 0; margin-top: 1px; }
+.warning p { font-size: 12.5px; color: #B49030; line-height: 1.65; }
+.warning strong { color: #FBBF24; }
+.step-list { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.step-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px 12px; border-radius: 10px; cursor: pointer; transition: background 0.15s; border: 1px solid transparent; }
+.step-item:hover { background: rgba(255,255,255,0.025); border-color: rgba(255,255,255,0.04); }
+.step-item label { cursor: pointer; display: flex; gap: 12px; width: 100%; align-items: flex-start; }
+.step-item input[type="checkbox"] { display: none; }
+.checkmark { width: 17px; height: 17px; border-radius: 5px; border: 1.5px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.04); flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; transition: all 0.18s ease; }
+.step-item label input:checked + .checkmark { background: rgba(56,189,248,0.2); border-color: rgba(56,189,248,0.5); }
+.step-item label input:checked + .checkmark::after { content: ''; display: block; width: 5px; height: 9px; border: 2px solid #38BDF8; border-top: none; border-left: none; transform: rotate(45deg) translate(-1px,-1px); }
+.step-text { font-size: 13px; color: #94A3B8; line-height: 1.6; transition: all 0.2s; }
+label:has(input:checked) .step-text { color: #475569; text-decoration: line-through; }
+.code-block { background: #050810; border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+.code-block:last-child { margin-bottom: 0; }
+.code-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.012); }
+.code-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #475569; display: flex; align-items: center; gap: 7px; }
+.code-label::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #38BDF8; box-shadow: 0 0 6px rgba(56,189,248,0.5); }
+pre { padding: 16px 18px; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.75; color: #94A3B8; }
+.token-cmd  { color: #38BDF8; }
+.token-path { color: #A78BFA; }
+.token-flag { color: #34D399; }
+.token-cmt  { color: #374151; }
+.token-var  { color: #FBBF24; }
+.token-str  { color: #F9A8D4; }
+.token-key  { color: #60A5FA; }
+.copy-btn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 7px; font-size: 11px; font-weight: 600; font-family: 'JetBrains Mono', monospace; cursor: pointer; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: #64748B; transition: all 0.15s; }
+.copy-btn:hover { background: rgba(255,255,255,0.08); color: #94A3B8; border-color: rgba(255,255,255,0.12); }
+.copy-btn.copied { color: #34D399; border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.06); }
+.lbs-item { display: flex; gap: 14px; padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.055); background: rgba(255,255,255,0.012); cursor: pointer; transition: all 0.18s; margin-bottom: 8px; align-items: flex-start; }
+.lbs-item:last-child { margin-bottom: 0; }
+.lbs-item:hover { border-color: rgba(255,255,255,0.1); background: rgba(255,255,255,0.022); }
+.lbs-item input[type="checkbox"] { display: none; }
+.lbs-num { width: 28px; height: 28px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid rgba(56,189,248,0.2); background: rgba(56,189,248,0.06); color: #38BDF8; transition: all 0.18s; }
+label:has(input:checked) .lbs-num { background: rgba(52,211,153,0.1); border-color: rgba(52,211,153,0.3); color: #34D399; }
+.lbs-content h3 { font-size: 13px; font-weight: 600; color: #CBD5E1; margin-bottom: 3px; }
+.lbs-content p  { font-size: 12px; color: #475569; line-height: 1.6; }
+label:has(input:checked) .lbs-content h3 { text-decoration: line-through; color: #334155; }
+label:has(input:checked) .lbs-content p  { color: #2D3748; }
+.progress-bar-track { height: 3px; background: rgba(255,255,255,0.05); border-radius: 99px; overflow: hidden; margin-top: 14px; }
+.progress-bar-fill { height: 100%; background: linear-gradient(90deg,#38BDF8,#818CF8); border-radius: 99px; transition: width 0.4s cubic-bezier(.4,0,.2,1); box-shadow: 0 0 8px rgba(56,189,248,0.4); }
+.progress-label { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 11.5px; font-family: 'JetBrains Mono', monospace; }
+.progress-label span:first-child { color: #475569; }
+.progress-label span:last-child  { color: #38BDF8; font-weight: 600; }
+.btn-reset { padding: 7px 14px; border-radius: 8px; font-size: 11.5px; font-weight: 500; cursor: pointer; border: 1px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.03); color: #475569; transition: all 0.15s; }
+.btn-reset:hover { color: #94A3B8; border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); }
+.divider { height: 1px; background: rgba(255,255,255,0.045); margin: 6px 0 18px; }
+.icon-wrap { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.15); flex-shrink: 0; }
+.overview-body { font-size: 13.5px; color: #64748B; line-height: 1.75; padding: 14px 16px; border-radius: 10px; background: rgba(56,189,248,0.025); border: 1px solid rgba(56,189,248,0.07); }
+.fade-up { opacity: 0; transform: translateY(18px); transition: opacity 0.6s cubic-bezier(.16,1,.3,1), transform 0.6s cubic-bezier(.16,1,.3,1); }
+.fade-up.visible { opacity: 1; transform: translateY(0); }
+footer { text-align: center; padding-top: 32px; font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #1E293B; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+footer span::before { content: '·'; margin-right: 8px; }
+footer span:first-child::before { display: none; }
+@media (max-width: 560px) {
+  .header-row { flex-direction: column; }
+  .data-table .cell-mono { word-break: break-all; }
+  h1 { font-size: 19px; }
+  pre { font-size: 11px; }
+}
+</style>
+</head>
+<body>
+<div id="loadbar"></div>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header-row fade-up">
+    <div>
+      <div class="logo-row">
+        <div class="logo-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="rgba(56,189,248,0.3)" stroke-width="1.5"/>
+            <path d="M12 2a10 10 0 1 0 .001 20.001A10 10 0 0 0 12 2Zm4.6 6.35-3.2 5.54a1 1 0 0 1-.87.51h-4.44l1.6-2.77h2.84l1.6-2.77A4 4 0 0 1 16.6 8.35ZM7.4 8.35a4 4 0 0 1 5.2-1.02l-1.6 2.77-2.77 0-2.43-4.2A9.96 9.96 0 0 0 3.6 12h3.2a4 4 0 0 1 .6-3.65Zm-3.8 7.3 3.2-5.54a1 1 0 0 1 .87-.51h4.44l-1.6 2.77H7.67l-1.6 2.77A4 4 0 0 1 3.6 15.65Zm13 0a9.96 9.96 0 0 0 2.2-6.05h-3.2a4 4 0 0 1-.6 3.65l-1.6-2.77 2.77 0 2.43 4.2A9.9 9.9 0 0 1 16.6 15.65Z" fill="#38BDF8" opacity="0.9"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Chrome Enterprise Bundle</h1>
+          <div class="header-meta">
+            <span>Quick Run Runbook</span>
+            <span>June 11, 2018</span>
+            <span>IT Admin</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <a href="data:application/octet-stream;base64,IyBDaHJvbWUgRW50ZXJwcmlzZSBCdW5kbGUgLSBEZXBsb3ltZW50IFNjcmlwdAojIEJhc2VkIG9uIEdvb2dsZSdzIDIwMTggYnVuZGxlIGd1aWRlCiMgUnVuIGFzIEFkbWluaXN0cmF0b3IKCiRCdW5kbGVSb290ID0gIkM6XFRlbXBcQ2hyb21lRW50ZXJwcmlzZUJ1bmRsZSIKJFBvbGljeURlZiA9ICJDOlxXaW5kb3dzXFBvbGljeURlZmluaXRpb25zIgoKV3JpdGUtSG9zdCAiMS4gQ29weWluZyBBRE1YIHRlbXBsYXRlcy4uLiIKQ29weS1JdGVtICIkQnVuZGxlUm9vdFxDb25maWd1cmF0aW9uXGFkbXhcKi5hZG14IiAkUG9saWN5RGVmIC1Gb3JjZQoKV3JpdGUtSG9zdCAiMi4gQ29weWluZyBBRE1MIGxhbmd1YWdlIGZpbGVzIChlbi1VUyBleGFtcGxlKS4uLiIKJExhbmcgPSAiZW4tVVMiCk5ldy1JdGVtIC1JdGVtVHlwZSBEaXJlY3RvcnkgLUZvcmNlIC1QYXRoICIkUG9saWN5RGVmXCRMYW5nIiB8IE91dC1OdWxsCkNvcHktSXRlbSAiJEJ1bmRsZVJvb3RcQ29uZmlndXJhdGlvblxhZG14XCRMYW5nXCouYWRtbCIgIiRQb2xpY3lEZWZcJExhbmciIC1Gb3JjZQoKV3JpdGUtSG9zdCAiMy4gSW5zdGFsbGluZyBDaHJvbWUgRW50ZXJwcmlzZSA2NC1iaXQgTVNJIHNpbGVudGx5Li4uIgpTdGFydC1Qcm9jZXNzIG1zaWV4ZWMuZXhlIC1XYWl0IC1Bcmd1bWVudExpc3QgIi9pIGAiJEJ1bmRsZVJvb3RcR29vZ2xlQ2hyb21lU3RhbmRBbG9uZUVudGVycHJpc2U2NC5tc2lgIiAvcW4gL25vcmVzdGFydCIKCldyaXRlLUhvc3QgIjQuIEluc3RhbGxpbmcgTGVnYWN5IEJyb3dzZXIgU3VwcG9ydC4uLiIKU3RhcnQtUHJvY2VzcyBtc2lleGVjLmV4ZSAtV2FpdCAtQXJndW1lbnRMaXN0ICIvaSBgIiRCdW5kbGVSb290XEluc3RhbGxlcnNcTGVnYWN5QnJvd3NlclN1cHBvcnRfVkVSU0lPTl9lbl94NjQubXNpYCIgL3FuIgoKV3JpdGUtSG9zdCAiNS4gRG9uZS4gT3BlbiBncGVkaXQubXNjIHRvIGNvbmZpZ3VyZSBwb2xpY2llcyB1bmRlciBDb21wdXRlciBDb25maWd1cmF0aW9uID4gQWRtaW5pc3RyYXRpdmUgVGVtcGxhdGVzID4gR29vZ2xlIgo=" download="Deploy-ChromeEnterprise.ps1" class="btn-download">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      Deploy-ChromeEnterprise.ps1
+    </a>
+  </div>
+
+  <!-- Overview -->
+  <div class="card fade-up">
+    <h2>
+      <div class="icon-wrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></div>
+      Overview
+    </h2>
+    <div class="overview-body">The Chrome Enterprise Bundle provides MSI installers and Group Policy templates to deploy, manage, and keep Chrome up-to-date across Windows Active Directory domains. Use ADMX with a Central Store for centralized policy management.</div>
+  </div>
+
+  <!-- Bundle Contents -->
+  <div class="card fade-up">
+    <h2>
+      <div class="icon-wrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+      Bundle Contents
+    </h2>
+    <div class="divider"></div>
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead><tr><th>Component</th><th>Path</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>Chrome 64-bit MSI <span class="badge badge-blue" style="margin-left:6px;vertical-align:middle;">Primary</span></td><td class="cell-mono">Installers\GoogleChromeStandaloneEnterprise64.msi</td><td>Modern 64-bit deployment</td></tr>
+          <tr><td>Chrome 32-bit MSI</td><td class="cell-mono">Installers\GoogleChromeStandaloneEnterprise.msi</td><td>Legacy 32-bit systems</td></tr>
+          <tr><td>Policy Template</td><td class="cell-mono">Configuration\admx\chrome.admx</td><td>Group Policy definitions</td></tr>
+          <tr><td>Language Files</td><td class="cell-mono">Configuration\admx\en-US\chrome.adml</td><td>ADMX localization</td></tr>
+          <tr><td>Legacy Browser Support</td><td class="cell-mono">Installers\LegacyBrowserSupport.msi</td><td>Auto-switch to IE for legacy URLs</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Warning -->
+  <div class="warning fade-up">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FBBF24" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4M12 17h.01"/></svg>
+    <p><strong>ADMX vs ADM:</strong> Do NOT use legacy <code style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(251,191,36,0.08);padding:1px 5px;border-radius:3px;color:#FBBF24;">.ADM</code> templates on Vista / Server 2008+. Always use <code style="font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(251,191,36,0.08);padding:1px 5px;border-radius:3px;color:#FBBF24;">.ADMX</code> with a Central Store. ADM files are deprecated and will not apply correctly.</p>
+  </div>
+
+  <!-- Deployment Steps -->
+  <div class="card fade-up">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <h2 style="margin-bottom:0;">
+        <div class="icon-wrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        Deployment Steps
+      </h2>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span id="progress-text" class="badge badge-blue">0 / 6</span>
+        <button class="btn-reset" id="reset-btn">Reset</button>
+      </div>
+    </div>
+    <ul class="step-list">
+      <li class="step-item"><label><input id="s1" type="checkbox"><span class="checkmark"></span><span class="step-text">Extract bundle to <code class="mono">\\fileserver\software\Chrome\</code></span></label></li>
+      <li class="step-item"><label><input id="s2" type="checkbox"><span class="checkmark"></span><span class="step-text">Copy ADMX / ADML files to Central Store (see commands below)</span></label></li>
+      <li class="step-item"><label><input id="s3" type="checkbox"><span class="checkmark"></span><span class="step-text">Create GPO: <em style="color:#818CF8;font-style:normal;font-weight:500;">&ldquo;Chrome Enterprise Settings&rdquo;</em> linked to Workstations OU</span></label></li>
+      <li class="step-item"><label><input id="s4" type="checkbox"><span class="checkmark"></span><span class="step-text">Deploy MSI via GPO Software Installation or SCCM / Intune &mdash; silent <code class="mono">/qn</code></span></label></li>
+      <li class="step-item"><label><input id="s5" type="checkbox"><span class="checkmark"></span><span class="step-text">Configure policies: Auto-update, Homepage, DefaultBrowser, Extension allowlist</span></label></li>
+      <li class="step-item"><label><input id="s6" type="checkbox"><span class="checkmark"></span><span class="step-text">Pilot test &mdash; run <code class="mono">gpupdate /force</code> then verify at <code class="mono">chrome://policy</code></span></label></li>
+    </ul>
+    <div class="progress-bar-track"><div class="progress-bar-fill" id="progress-fill" style="width:0%;"></div></div>
+    <div class="progress-label"><span>Deployment progress</span><span id="progress-pct">0%</span></div>
+  </div>
+
+  <!-- ADMX Commands -->
+  <div class="card fade-up">
+    <h2>
+      <div class="icon-wrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div>
+      ADMX Copy Commands
+    </h2>
+    <div class="divider"></div>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-label">Local &mdash; PolicyDefinitions</span>
+        <button class="copy-btn" data-target="cmd1"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</button>
+      </div>
+      <pre id="cmd1"><span class="token-cmd">xcopy</span> <span class="token-str">&quot;.\Configuration\admx\chrome.admx&quot;</span> <span class="token-str">&quot;%windir%\PolicyDefinitions\&quot;</span> <span class="token-flag">/Y</span>
+<span class="token-cmd">xcopy</span> <span class="token-str">&quot;.\Configuration\admx\en-US\chrome.adml&quot;</span> <span class="token-str">&quot;%windir%\PolicyDefinitions\en-US\&quot;</span> <span class="token-flag">/Y</span></pre>
+    </div>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-label">Domain &mdash; Central Store (SYSVOL)</span>
+        <button class="copy-btn" data-target="cmd2"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</button>
+      </div>
+      <pre id="cmd2"><span class="token-cmd">xcopy</span> <span class="token-str">&quot;.\Configuration\admx\chrome.admx&quot;</span> <span class="token-path">&quot;\\yourdomain.local\SYSVOL\yourdomain.local\Policies\PolicyDefinitions\&quot;</span> <span class="token-flag">/Y</span>
+<span class="token-cmd">xcopy</span> <span class="token-str">&quot;.\Configuration\admx\en-US\*.adml&quot;</span> <span class="token-path">&quot;\\yourdomain.local\SYSVOL\yourdomain.local\Policies\PolicyDefinitions\en-US\&quot;</span> <span class="token-flag">/Y</span></pre>
+    </div>
+  </div>
+
+  <!-- Legacy Browser Support -->
+  <div class="card fade-up">
+    <h2>
+      <div class="icon-wrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+      Legacy Browser Support
+      <span class="badge badge-amber" style="margin-left:auto;">3 steps</span>
+    </h2>
+    <div class="divider"></div>
+    <label class="lbs-item"><input id="l1" type="checkbox"><span class="lbs-num">01</span><div class="lbs-content"><h3>Install LBS MSI</h3><p>Deploy <code class="mono">LegacyBrowserSupport.msi</code> to all client machines via GPO or SCCM</p></div></label>
+    <label class="lbs-item"><input id="l2" type="checkbox"><span class="lbs-num">02</span><div class="lbs-content"><h3>Set Alternative Browser Path</h3><p>GPO: <code class="mono">AlternativeBrowserPath</code> = <code class="mono">C:\Program Files\Internet Explorer\iexplore.exe</code></p></div></label>
+    <label class="lbs-item"><input id="l3" type="checkbox"><span class="lbs-num">03</span><div class="lbs-content"><h3>Define URL Switch List</h3><p>GPO: Configure sites that auto-open in the alternative browser &mdash; e.g., legacy intranet app URLs</p></div></label>
+  </div>
+
+  <!-- PowerShell -->
+  <div class="card fade-up">
+    <h2>
+      <div class="icon-wrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+      PowerShell &mdash; Silent Deployment
+    </h2>
+    <div class="code-block" style="margin-bottom:0;">
+      <div class="code-header">
+        <span class="code-label">Deploy-ChromeEnterprise.ps1</span>
+        <button class="copy-btn" data-target="ps1"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</button>
+      </div>
+      <pre id="ps1"><span class="token-cmt"># Deploy-ChromeEnterprise.ps1 &mdash; Run as Administrator</span>
+
+<span class="token-var">$msi</span>  = <span class="token-str">&quot;.\Installers\GoogleChromeStandaloneEnterprise64.msi&quot;</span>
+<span class="token-var">$args</span> = @(<span class="token-str">&quot;/i&quot;</span>, <span class="token-str">&quot;`&quot;$msi`&quot;&quot;</span>, <span class="token-str">&quot;/qn&quot;</span>, <span class="token-str">&quot;/norestart&quot;</span>, <span class="token-str">&quot;ALLUSERS=1&quot;</span>)
+
+<span class="token-key">Start-Process</span> msiexec.exe <span class="token-flag">-ArgumentList</span> <span class="token-var">$args</span> <span class="token-flag">-Wait</span> <span class="token-flag">-Verb</span> RunAs
+
+<span class="token-cmt"># Verify installation</span>
+<span class="token-key">Get-ItemProperty</span> <span class="token-path">HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*</span> |
+  <span class="token-key">Where-Object</span> {<span class="token-var">$_</span>.DisplayName <span class="token-flag">-like</span> <span class="token-str">&quot;*Chrome*&quot;</span>} |
+  <span class="token-key">Select</span> DisplayName, DisplayVersion</pre>
+    </div>
+  </div>
+
+  <footer class="fade-up">
+    <span>Chrome Enterprise Bundle Quick Run</span>
+    <span>IT Admin Reference</span>
+    <span>Works offline</span>
+    <span>State stored locally</span>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  'use strict';
+  const fadeEls = document.querySelectorAll('.fade-up');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('visible'); io.unobserve(e.target); } });
+  }, { threshold: 0.06 });
+  fadeEls.forEach((el,i) => { el.style.transitionDelay=(i*55)+'ms'; io.observe(el); });
+  setTimeout(() => { const lb=document.getElementById('loadbar'); if(lb) lb.style.display='none'; }, 1600);
+
+  const STEP_IDS=['s1','s2','s3','s4','s5','s6'];
+  const ALL_IDS=[...STEP_IDS,'l1','l2','l3'];
+
+  function updateProgress(){
+    const done=STEP_IDS.filter(id=>{ const el=document.getElementById(id); return el&&el.checked; }).length;
+    const pct=Math.round((done/STEP_IDS.length)*100);
+    const fill=document.getElementById('progress-fill');
+    const pctEl=document.getElementById('progress-pct');
+    const textEl=document.getElementById('progress-text');
+    if(fill){ fill.style.width=pct+'%'; fill.style.background=pct===100?'linear-gradient(90deg,#34D399,#10B981)':'linear-gradient(90deg,#38BDF8,#818CF8)'; }
+    if(pctEl) pctEl.textContent=pct+'%';
+    if(textEl) textEl.textContent=done+' / '+STEP_IDS.length;
+  }
+
+  ALL_IDS.forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
+    try{ el.checked=localStorage.getItem('ceb2-'+id)==='1'; }catch(e){}
+    el.addEventListener('change',()=>{ try{ localStorage.setItem('ceb2-'+id,el.checked?'1':'0'); }catch(e){} updateProgress(); });
+  });
+  updateProgress();
+
+  document.getElementById('reset-btn')?.addEventListener('click',()=>{
+    ALL_IDS.forEach(id=>{ const el=document.getElementById(id); if(!el) return; el.checked=false; try{ localStorage.removeItem('ceb2-'+id); }catch(e){} });
+    updateProgress();
+  });
+
+  document.querySelectorAll('.copy-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id=btn.getAttribute('data-target');
+      const el=document.getElementById(id); if(!el) return;
+      const text=el.innerText||el.textContent;
+      try{ await navigator.clipboard.writeText(text); }
+      catch(e){ const r=document.createRange(); r.selectNodeContents(el); const s=window.getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand('copy'); s.removeAllRanges(); }
+      const orig=btn.innerHTML;
+      btn.innerHTML='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied';
+      btn.classList.add('copied');
+      setTimeout(()=>{ btn.innerHTML=orig; btn.classList.remove('copied'); }, 1600);
+    });
+  });
+})();
+</script>
+</body>
+</html>
