@@ -132,7 +132,7 @@
   .price-amount span { font-size: .9rem; color: var(--muted); font-weight: 400; }
   .price-features { list-style: none; margin-top: 1rem; }
   .price-features li { padding: .4rem 0; font-size: .82rem; color: var(--muted); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: .5rem; }
-  .price-features li::before { content: '✓'; color: var(--accent2); font-weight: 700; }
+  .price-features li::before { content: '\2713'; color: var(--accent2); font-weight: 700; }
 
   /* TABS */
   .tabs { display: flex; gap: .5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
@@ -171,7 +171,7 @@
 <!-- HERO -->
 <div class="hero" id="sec-demo">
   <div class="hero-badge">🚀 Multi-tenant · Near-zero marginal cost · AI-powered</div>
-  <h1>The AI OS that <span>scales globally</span><br>with a small team</h1>
+  <h1>The AI OS that <span>scales globally</span></h1>
   <p>One codebase. Unlimited tenants. Self-serve onboarding. A marketplace that grows itself.<br>Software, marketplaces, and social networks — all in one platform.</p>
   <div class="hero-btns">
     <button class="btn btn-primary" onclick="scrollTo('signup-section')">Start for Free →</button>
@@ -329,7 +329,7 @@
         <div style="display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--border)"><span>More tenants → Better knowledge</span><span style="color:var(--accent)">↑↑</span></div>
         <div style="display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--border)"><span>More plugins → More revenue</span><span style="color:var(--accent)">↑↑</span></div>
         <div style="display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--border)"><span>More data → Better AI</span><span style="color:var(--accent)">↑↑</span></div>
-        <div style="display:flex;justify-content:space-between;padding:.4rem 0"><span>Team size needed</span><span style="color:var(--accent2)">2–3 people</span></div>
+        <div style="display:flex;justify-content:space-between;padding:.4rem 0"><span>Scales to</span><span style="color:var(--accent2)">∞ tenants</span></div>
       </div>
     </div>
   </div>
@@ -401,7 +401,7 @@ const state = {
     { id:'k1', category:'support',  q:'How do I reset my password?',           a:'Go to Settings → Security → Reset Password. You will receive an email within 2 minutes.',                    votes:42 },
     { id:'k2', category:'billing',  q:'Can I upgrade my plan mid-month?',      a:'Yes! Upgrades are prorated. You only pay for the remaining days in your billing cycle.',                    votes:31 },
     { id:'k3', category:'technical',q:'How do I embed the chat widget?',       a:'Add one script tag to your site: <script src="app.novasaas.ai/widget.js?key=YOUR_API_KEY"><\/script>',   votes:28 },
-    { id:'k4', category:'sales',    q:'What is the difference between plans?', a:'Starter is great for small teams. Pro unlocks the knowledge commons & custom branding. Enterprise adds SLAs.', votes:19 },
+    { id:'k4', category:'sales',    q:'What is the difference between plans?', a:'Starter is great for getting started. Pro unlocks the knowledge commons & custom branding. Enterprise adds SLAs.', votes:19 },
   ],
   messages: 247,
   leads: 18,
