@@ -6,77 +6,16 @@
   *, *::before, *::after { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
   body {
-    @apply bg-surface text-[#E6E8EC] font-sans;
+    @apply font-sans;
+    background: #040812;
+    color: #E2E4EA;
     -webkit-font-smoothing: antialiased;
-    background: #050810;
+    -moz-osx-font-smoothing: grayscale;
   }
-  ::-webkit-scrollbar { width: 4px; }
+  ::selection { background: rgba(0,255,198,0.18); color: #fff; }
+  ::-webkit-scrollbar { width: 3px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { @apply bg-white/10 rounded-full; }
-}
-
-@layer components {
-  .btn-primary {
-    @apply bg-accent text-surface font-bold rounded-xl transition-all duration-200;
-    box-shadow: 0 0 24px rgba(0,255,198,0.2);
-  }
-  .btn-primary:hover {
-    @apply opacity-90;
-    transform: scale(1.02);
-    box-shadow: 0 0 40px rgba(0,255,198,0.35);
-  }
-  .btn-primary:active {
-    transform: scale(0.98);
-  }
-
-  .glass-card {
-    @apply bg-white/[0.02] border border-white/[0.06] rounded-2xl backdrop-blur-xl;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
-  }
-
-  .gradient-text {
-    background: linear-gradient(135deg, #00FFC6 0%, #00D4FF 40%, #A78BFA 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    filter: drop-shadow(0 0 40px rgba(0,255,198,0.25));
-  }
-
-  .ticker-track {
-    display: flex;
-    width: max-content;
-    animation: ticker-scroll 40s linear infinite;
-  }
-  .ticker-track:hover {
-    animation-play-state: paused;
-  }
-
-  .grid-bg {
-    background-image:
-      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-    background-size: 64px 64px;
-  }
-
-  .progress-bar {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    z-index: 100;
-    background: linear-gradient(90deg, #00FFC6, #00D4FF);
-    transform-origin: left;
-    transition: width 0.4s ease-out, opacity 0.6s ease-in;
-  }
-
-  .fade-up {
-    opacity: 0;
-    transform: translateY(24px);
-    transition: opacity 0.7s ease-out, transform 0.7s ease-out;
-  }
-  .fade-up.visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 99px; }
 }
 
 @keyframes ticker-scroll {
@@ -84,7 +23,7 @@
   to   { transform: translateX(-50%); }
 }
 
-@keyframes tickerScroll {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
 }
