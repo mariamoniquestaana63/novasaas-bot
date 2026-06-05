@@ -115,6 +115,51 @@ app.post("/api/waitlist", async (req, res) => {
   res.json({ success: true });
 });
 
+// ── Admin ─────────────────────────────────────────────────────────────────────
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "mariamoniquestaana63@gmail.com";
+
+app.get("/api/admin/stats", requireAuth, async (req, res) => {
+  if (req.user.email !== ADMIN_EMAIL)
+    return res.status(403).json({ error: "Forbidden" });
+
+  const [subsResult, waitlistResult, usersResult] = await Promise.all([
+    db.from("subscriptions").select("plan, status, current_period_end, cancel_at_period_end, user_id"),
+    db.from("waitlist").select("email, created_at").order("created_at", { ascending: false }),
+    db.auth.admin.listUsers(),
+  ]);
+
+  const subs = subsResult.data ?? [];
+  const waitlist = waitlistResult.data ?? [];
+  const users = usersResult.data?.users ?? [];
+
+  const activeSubs = subs.filter(s => s.status === "active" || s.status === "trialing");
+  const planCounts = { starter: 0, pro: 0, elite: 0 };
+  const planMrr    = { starter: 29, pro: 79, elite: 199 };
+  let mrr = 0;
+  for (const s of activeSubs) {
+    if (planCounts[s.plan] !== undefined) planCounts[s.plan]++;
+    mrr += planMrr[s.plan] ?? 0;
+  }
+
+  const subscribersWithEmail = subs.map(s => {
+    const u = users.find(u => u.id === s.user_id);
+    return { ...s, email: u?.email ?? "—" };
+  });
+
+  res.json({
+    stats: {
+      total_users:    users.length,
+      active_subs:    activeSubs.length,
+      waitlist_count: waitlist.length,
+      mrr,
+      plans: planCounts,
+    },
+    subscribers: subscribersWithEmail,
+    waitlist,
+  });
+});
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 async function getOrCreateCustomer(userId, email) {
   const { data } = await db.from("subscriptions").select("stripe_customer_id").eq("user_id", userId).single();
   if (data?.stripe_customer_id) return data.stripe_customer_id;
