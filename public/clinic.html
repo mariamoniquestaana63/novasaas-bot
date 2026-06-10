@@ -701,85 +701,33 @@ nav { display: flex; align-items: center; justify-content: space-between; paddin
 </div>
 
 
-<script>
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+const SUPABASE_URL = 'https://vmbfmerckqmqpaulyydi.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZtYmZtZXJja3FtcXBhdWx5eWRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4NjU2MjAsImV4cCI6MjA5MzQ0MTYyMH0.ikw3fGvLq84bBRlyMZBHgDxrpyW9nTXE5QTQE4sA4EE'
+const db = createClient(SUPABASE_URL, SUPABASE_KEY)
+
 // =====================================================================
 // STATE
 // =====================================================================
 let selectedPatientId = null;
 let pendingCalSlot = null;
 
-const patients = [
-  {
-    id: 1, name: "Sarah Mitchell", dob: "1994-08-12", phone: "(555) 201-4477", email: "sarah.mitchell@email.com",
-    blood: "A+", allergies: "Penicillin", status: "Active",
-    initials: "SM",
-    visits: [
-      { date: "2026-05-28", reason: "32-week antenatal check", doctor: "Midwife Chen", notes: "Fundal height 32cm. Baby in cephalic position. BP normal. Iron levels borderline — dietary advice given." },
-      { date: "2026-04-14", reason: "28-week antenatal check", doctor: "Midwife Chen", notes: "GTT negative. All bloods satisfactory. Discussed birth plan preferences." },
-      { date: "2026-02-20", reason: "12-week booking appointment", doctor: "Midwife Torres", notes: "Dating scan confirmed 12+2. Blood panel taken. First trimester all normal." }
-    ],
-    upcoming: [{ date: "2026-06-25", time: "10:00 AM", service: "36-week Antenatal Check" }]
-  },
-  {
-    id: 2, name: "Emma Clarke", dob: "1990-03-05", phone: "(555) 304-9912", email: "emma.clarke@gmail.com",
-    blood: "O+", allergies: "None known", status: "Active",
-    initials: "EC",
-    visits: [
-      { date: "2026-06-01", reason: "8-week postnatal check", doctor: "Midwife Torres", notes: "Good recovery post vaginal birth. Lochia resolved. Mood screening normal. Breastfeeding well established." },
-      { date: "2026-05-04", reason: "2-week postnatal visit", doctor: "Midwife Chen", notes: "Perineal wound healing well. Baby weight regained. Referred to lactation consultant for latch concerns." }
-    ],
-    upcoming: [{ date: "2026-06-18", time: "11:00 AM", service: "Postnatal Check" }]
-  },
-  {
-    id: 3, name: "Priya Nair", dob: "1988-11-22", phone: "(555) 417-2230", email: "priya.nair@work.com",
-    blood: "B+", allergies: "Sulfonamides", status: "At-Risk",
-    initials: "PN",
-    visits: [
-      { date: "2026-05-15", reason: "Gestational diabetes review", doctor: "Midwife Chen", notes: "GTT positive at 28 weeks. Dietary modifications initiated. Blood glucose monitoring commenced. Referred to obstetric team." },
-      { date: "2026-04-02", reason: "20-week anomaly scan referral", doctor: "Midwife Torres", notes: "Scan completed — no structural concerns. Placenta anterior, low-lying. Repeat scan at 32 weeks." }
-    ],
-    upcoming: [{ date: "2026-06-12", time: "9:00 AM", service: "Antenatal Appointment" }]
-  },
-  {
-    id: 4, name: "Aisha Okonkwo", dob: "1996-06-14", phone: "(555) 522-8873", email: "aisha.okonkwo@mail.com",
-    blood: "AB-", allergies: "None known", status: "New",
-    initials: "AO",
-    visits: [
-      { date: "2026-06-03", reason: "8-week booking appointment", doctor: "Midwife Torres", notes: "First pregnancy. Dating scan confirmed 8+3. All bloods taken. Discussed antenatal schedule and vitamin supplementation." }
-    ],
-    upcoming: [{ date: "2026-06-28", time: "10:00 AM", service: "12-week Antenatal Check" }]
-  },
-  {
-    id: 5, name: "Linda Tran", dob: "1985-09-14", phone: "(555) 614-3356", email: "linda.tran@hnet.com",
-    blood: "O-", allergies: "Aspirin, Latex", status: "Active",
-    initials: "LT",
-    visits: [
-      { date: "2026-06-03", reason: "Lactation support session", doctor: "LC Morgan", notes: "Severe latch difficulty with 3-week-old. Tongue tie identified and referred for assessment. Supplementing with expressed milk in interim." },
-      { date: "2026-05-18", reason: "Postnatal home visit", doctor: "Midwife Chen", notes: "Day 5 postnatal. Caesarean wound clean and healing. Baby weight tracking well. Introduced breast pump." }
-    ],
-    upcoming: [{ date: "2026-09-03", time: "2:00 PM", service: "Lactation Support" }]
-  }
-];
+// In-memory cache — populated from Supabase on load
+const state = {
+  patients: [],
+  staff: [],
+  invoices: [],
+  appointments: [],
+  visits: {}    // keyed by patient_id
+};
 
-let invoices = [
-  { id: "NMC-0091", patient: "Sarah Mitchell", service: "Antenatal Appointment", amount: 95, due: "2026-05-30", status: "Paid" },
-  { id: "NMC-0092", patient: "Emma Clarke", service: "Postnatal Check", amount: 85, due: "2026-06-10", status: "Pending" },
-  { id: "NMC-0093", patient: "Priya Nair", service: "Antenatal Appointment", amount: 115, due: "2026-05-20", status: "Overdue" },
-  { id: "NMC-0094", patient: "Aisha Okonkwo", service: "Antenatal Appointment", amount: 85, due: "2026-06-01", status: "Paid" },
-  { id: "NMC-0095", patient: "Linda Tran", service: "Lactation Support", amount: 90, due: "2026-06-15", status: "Pending" },
-  { id: "NMC-0096", patient: "Priya Nair", service: "Birth Plan Consultation", amount: 120, due: "2026-05-15", status: "Overdue" },
-  { id: "NMC-0097", patient: "Sarah Mitchell", service: "Birth Plan Consultation", amount: 120, due: "2026-06-20", status: "Pending" },
-  { id: "NMC-0098", patient: "Emma Clarke", service: "Lactation Support", amount: 90, due: "2026-06-08", status: "Paid" }
-];
+// Expose state arrays as live references for existing code
+let patients = state.patients;
+let invoices = state.invoices;
+let staffMembers = state.staff;
 
 let invoiceCounter = 99;
-
-const staffMembers = [
-  { name: "Midwife Sophie Chen", role: "Lead Midwife", status: "In Consultation", color: "#6c63ff", initials: "SC" },
-  { name: "Midwife Ana Torres", role: "Antenatal Specialist", status: "Available", color: "#00d4aa", initials: "AT" },
-  { name: "LC Bridget Morgan", role: "Lactation Consultant", status: "Available", color: "#f5a623", initials: "BM" },
-  { name: "Nurse Isla Reid", role: "Postnatal Nurse", status: "Off", color: "#ff4d6d", initials: "IR" }
-];
 
 const calendarEvents = {
   "Mon-9": [{ label: "Sarah Mitchell — 36wk Antenatal", color: "" }],
@@ -827,23 +775,42 @@ function scrollToBooking() {
   document.getElementById('booking-form-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-function submitBooking(e) {
+async function submitBooking(e) {
   e.preventDefault();
-  const ref = 'NMC-' + Math.floor(1000 + Math.random() * 9000);
+  const name = document.getElementById('b-name').value;
+  const service = document.getElementById('b-service').value;
+  const date = document.getElementById('b-date').value;
+  const timeSlot = document.getElementById('b-time').value;
+  const notes = document.getElementById('b-notes').value;
+
+  const { data, error } = await db.from('clinic_appointments').insert({
+    patient_name: name,
+    service: service,
+    appointment_date: date,
+    time_slot: timeSlot,
+    notes: notes,
+    status: 'Scheduled'
+  }).select().single();
+
+  let ref;
+  if (!error && data) {
+    ref = data.booking_ref || ('NMC-' + Math.floor(1000 + Math.random() * 9000));
+    // Update local cache
+    state.appointments.push(data);
+    const match = state.patients.find(p => p.name.toLowerCase() === name.toLowerCase());
+    if (match) {
+      if (!match.upcoming) match.upcoming = [];
+      match.upcoming.push({ date, time: timeSlot, service });
+    }
+  } else {
+    console.error('Booking insert error:', error);
+    ref = 'NMC-' + Math.floor(1000 + Math.random() * 9000);
+  }
+
   document.getElementById('booking-ref-num').textContent = ref;
   document.getElementById('booking-form').style.display = 'none';
   const conf = document.getElementById('booking-confirmation');
   conf.classList.add('show');
-
-  // Also add to CRM upcoming
-  const name = document.getElementById('b-name').value;
-  const service = document.getElementById('b-service').value;
-  const date = document.getElementById('b-date').value;
-  const time = document.getElementById('b-time').value;
-  const match = patients.find(p => p.name.toLowerCase() === name.toLowerCase());
-  if (match) {
-    match.upcoming.push({ date, time, service });
-  }
 }
 
 function resetBookingForm() {
@@ -943,11 +910,22 @@ function markAtRisk(id) {
   if (p) { p.status = 'At-Risk'; selectPatient(id); renderPatientList(document.getElementById('patient-search').value); }
 }
 
-function saveNote() {
+async function saveNote() {
   const text = document.getElementById('note-text').value.trim();
   if (!text || !selectedPatientId) { closeModal('add-note-modal'); return; }
-  const p = patients.find(x => x.id === selectedPatientId);
-  p.visits.unshift({ date: new Date().toISOString().slice(0,10), reason: "Clinical Note", doctor: "Midwife Chen", notes: text });
+  const p = state.patients.find(x => x.id === selectedPatientId);
+
+  // Persist to Supabase
+  const { error } = await db.from('clinic_notes').insert({
+    patient_id: selectedPatientId,
+    note: text,
+    author: 'Midwife'
+  });
+  if (error) console.error('Note insert error:', error);
+
+  // Update local cache immediately for instant UI
+  if (!p.visits) p.visits = [];
+  p.visits.unshift({ date: new Date().toISOString().slice(0,10), reason: "Clinical Note", doctor: "Midwife", notes: text });
   closeModal('add-note-modal');
   document.getElementById('note-text').value = '';
   renderPatientDetail(p);
@@ -966,19 +944,29 @@ function saveFollowup() {
 
 function openAddPatientModal() { openModal('add-patient-modal'); }
 
-function addPatient() {
+async function addPatient() {
   const name = document.getElementById('np-name').value.trim();
   if (!name) return;
   const initials = name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
-  patients.push({
-    id: Date.now(), name, initials,
-    dob: document.getElementById('np-dob').value,
+  const newPatient = {
+    name,
+    dob: document.getElementById('np-dob').value || null,
     phone: document.getElementById('np-phone').value,
     email: document.getElementById('np-email').value,
-    blood: document.getElementById('np-blood').value,
+    blood_type: document.getElementById('np-blood').value,
     allergies: document.getElementById('np-allergies').value || 'None known',
-    status: 'New', visits: [], upcoming: []
-  });
+    status: 'New'
+  };
+
+  const { data, error } = await db.from('clinic_patients').insert(newPatient).select().single();
+  if (error) {
+    console.error('Add patient error:', error);
+    // Fall back to local-only
+    state.patients.push({ ...newPatient, id: Date.now(), initials, visits: [], upcoming: [] });
+  } else {
+    state.patients.push({ ...data, initials, blood: data.blood_type, visits: [], upcoming: [] });
+  }
+
   closeModal('add-patient-modal');
   document.getElementById('np-name').value = '';
   renderPatientList();
@@ -1098,9 +1086,15 @@ function renderBilling() {
   }).join('');
 }
 
-function markPaid(idx) {
-  invoices[idx].status = 'Paid';
+async function markPaid(idx) {
+  const inv = state.invoices[idx];
+  // Optimistic update
+  inv.status = 'Paid';
   renderBilling();
+  if (inv._id) {
+    const { error } = await db.from('clinic_invoices').update({ status: 'Paid', paid_at: new Date().toISOString() }).eq('id', inv._id);
+    if (error) console.error('Mark paid error:', error);
+  }
 }
 
 function toggleCreateInvoice() {
