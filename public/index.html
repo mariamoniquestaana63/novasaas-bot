@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NovaSaaS AI OS — Scalable Multi-Tenant Platform</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --border: #1e1e2e;
+    --accent: #6c63ff;
+    --accent2: #00d4aa;
+    --text: #e0e0f0;
+    --muted: #666680;
+    --success: #00d4aa;
+    --warning: #f5a623;
+    --card: #13131f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+
+  /* NAV */
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(10,10,15,0.95); backdrop-filter: blur(12px); z-index: 100; }
+  .logo { font-size: 1.2rem; font-weight: 700; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .nav-pills { display: flex; gap: .5rem; }
+  .nav-pill { padding: .4rem 1rem; border-radius: 999px; font-size: .8rem; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--muted); transition: all .2s; }
+  .nav-pill:hover, .nav-pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* HERO */
+  .hero { text-align: center; padding: 5rem 2rem 3rem; max-width: 800px; margin: 0 auto; }
+  .hero-badge { display: inline-block; padding: .3rem 1rem; border-radius: 999px; border: 1px solid var(--accent); color: var(--accent); font-size: .75rem; margin-bottom: 1.5rem; }
+  .hero h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; line-height: 1.1; margin-bottom: 1rem; }
+  .hero h1 span { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero p { font-size: 1.1rem; color: var(--muted); line-height: 1.7; margin-bottom: 2rem; }
+  .hero-btns { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+  .btn { padding: .75rem 1.75rem; border-radius: 8px; font-size: .9rem; font-weight: 600; cursor: pointer; border: none; transition: all .2s; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #5a52e0; transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* STATS BAR */
+  .stats-bar { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 12px; max-width: 700px; margin: 0 auto 3rem; overflow: hidden; }
+  .stat { flex: 1; padding: 1.25rem; text-align: center; border-right: 1px solid var(--border); }
+  .stat:last-child { border-right: none; }
+  .stat-num { font-size: 1.6rem; font-weight: 700; color: var(--accent2); }
+  .stat-label { font-size: .75rem; color: var(--muted); margin-top: .2rem; }
+
+  /* SECTIONS */
+  .section { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+  .section-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; display: flex; align-items: center; gap: .5rem; }
+  .section-title .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+
+  /* CARDS */
+  .cards { display: grid; gap: 1rem; }
+  .cards-2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .cards-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; transition: border-color .2s; }
+  .card:hover { border-color: var(--accent); }
+  .card-header { display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem; }
+  .card-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; background: var(--border); }
+  .card-title { font-weight: 600; font-size: .95rem; }
+  .card-meta { font-size: .75rem; color: var(--muted); }
+  .card-desc { font-size: .85rem; color: var(--muted); line-height: 1.6; }
+  .badge { display: inline-block; padding: .2rem .6rem; border-radius: 4px; font-size: .7rem; font-weight: 600; }
+  .badge-green { background: rgba(0,212,170,.15); color: var(--accent2); }
+  .badge-purple { background: rgba(108,99,255,.15); color: var(--accent); }
+  .badge-orange { background: rgba(245,166,35,.15); color: var(--warning); }
+
+  /* CHAT DEMO */
+  .chat-demo { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; max-width: 500px; }
+  .chat-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: .75rem; }
+  .chat-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: .9rem; }
+  .chat-name { font-weight: 600; font-size: .9rem; }
+  .chat-status { font-size: .75rem; color: var(--accent2); }
+  .chat-messages { padding: 1rem; min-height: 280px; max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: .75rem; }
+  .msg { max-width: 80%; padding: .75rem 1rem; border-radius: 12px; font-size: .85rem; line-height: 1.5; animation: fadeUp .3s ease; }
+  .msg-bot { background: var(--border); border-bottom-left-radius: 4px; align-self: flex-start; }
+  .msg-user { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; align-self: flex-end; }
+  .msg-typing { display: flex; gap: 4px; align-items: center; padding: .75rem 1rem; }
+  .dot-pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: pulse 1.2s infinite; }
+  .dot-pulse:nth-child(2) { animation-delay: .2s; }
+  .dot-pulse:nth-child(3) { animation-delay: .4s; }
+  .chat-input-row { padding: .75rem 1rem; border-top: 1px solid var(--border); display: flex; gap: .5rem; }
+  .chat-input { flex: 1; background: var(--border); border: none; border-radius: 8px; padding: .6rem .9rem; color: var(--text); font-size: .85rem; outline: none; }
+  .chat-input::placeholder { color: var(--muted); }
+  .chat-send { background: var(--accent); border: none; border-radius: 8px; padding: .6rem 1rem; color: #fff; cursor: pointer; font-size: .85rem; font-weight: 600; }
+
+  /* SIGNUP FORM */
+  .signup-form { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
+  .form-row { margin-bottom: 1rem; }
+  .form-label { display: block; font-size: .8rem; color: var(--muted); margin-bottom: .4rem; }
+  .form-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: .65rem 1rem; color: var(--text); font-size: .9rem; outline: none; transition: border-color .2s; }
+  .form-input:focus { border-color: var(--accent); }
+  .form-select { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: .65rem 1rem; color: var(--text); font-size: .9rem; outline: none; }
+  .result-box { margin-top: 1rem; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; font-family: monospace; font-size: .78rem; color: var(--accent2); white-space: pre-wrap; word-break: break-all; display: none; }
+
+  /* PLUGIN GRID */
+  .plugin-card { cursor: pointer; }
+  .plugin-card.installed { border-color: var(--accent2); }
+  .install-btn { margin-top: 1rem; width: 100%; padding: .5rem; border-radius: 6px; font-size: .8rem; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--muted); transition: all .2s; }
+  .install-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .install-btn.installed { background: rgba(0,212,170,.1); border-color: var(--accent2); color: var(--accent2); }
+  .stars { color: var(--warning); font-size: .8rem; }
+
+  /* ANALYTICS */
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: .75rem; margin-bottom: 1.5rem; }
+  .metric { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; }
+  .metric-value { font-size: 1.8rem; font-weight: 700; }
+  .metric-label { font-size: .72rem; color: var(--muted); margin-top: .2rem; }
+  .metric-green { color: var(--accent2); }
+  .metric-purple { color: var(--accent); }
+  .metric-orange { color: var(--warning); }
+
+  /* KNOWLEDGE */
+  .knowledge-entry { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; margin-bottom: .75rem; }
+  .knowledge-q { font-weight: 600; font-size: .9rem; margin-bottom: .5rem; }
+  .knowledge-a { font-size: .85rem; color: var(--muted); line-height: 1.6; }
+  .knowledge-footer { display: flex; align-items: center; gap: 1rem; margin-top: .75rem; }
+  .upvote-btn { background: none; border: 1px solid var(--border); border-radius: 6px; padding: .3rem .7rem; color: var(--muted); font-size: .75rem; cursor: pointer; transition: all .2s; }
+  .upvote-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  /* PRICING */
+  .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+  .price-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; position: relative; transition: all .2s; }
+  .price-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .price-card.featured { border-color: var(--accent); }
+  .price-card.featured::before { content: 'POPULAR'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; font-size: .65rem; font-weight: 700; padding: .2rem .6rem; border-radius: 4px; }
+  .price-name { font-size: .85rem; color: var(--muted); margin-bottom: .5rem; }
+  .price-amount { font-size: 2rem; font-weight: 800; }
+  .price-amount span { font-size: .9rem; color: var(--muted); font-weight: 400; }
+  .price-features { list-style: none; margin-top: 1rem; }
+  .price-features li { padding: .4rem 0; font-size: .82rem; color: var(--muted); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: .5rem; }
+  .price-features li::before { content: '✓'; color: var(--accent2); font-weight: 700; }
+
+  /* TABS */
+  .tabs { display: flex; gap: .5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .tab { padding: .5rem 1.1rem; border-radius: 8px; font-size: .82rem; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--muted); transition: all .2s; }
+  .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulse { 0%,80%,100% { transform: scale(0.8); opacity: .5; } 40% { transform: scale(1); opacity: 1; } }
+
+  /* FOOTER */
+  footer { text-align: center; padding: 3rem 2rem; color: var(--muted); font-size: .8rem; border-top: 1px solid var(--border); margin-top: 4rem; }
+
+  /* RESPONSIVE */
+  @media (max-width: 600px) {
+    .stats-bar { flex-direction: column; }
+    .stat { border-right: none; border-bottom: 1px solid var(--border); }
+    nav { padding: 1rem; }
+    .nav-pills { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">⚡ NovaSaaS</div>
+  <div class="nav-pills">
+    <button class="nav-pill active" onclick="showSection('demo')">Live Demo</button>
+    <button class="nav-pill" onclick="showSection('marketplace')">Marketplace</button>
+    <button class="nav-pill" onclick="showSection('knowledge')">Knowledge</button>
+    <button class="nav-pill" onclick="showSection('analytics')">Analytics</button>
+    <button class="nav-pill" onclick="showSection('pricing')">Pricing</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero" id="sec-demo">
+  <div class="hero-badge">🚀 Multi-tenant · Near-zero marginal cost · AI-powered</div>
+  <h1>The AI OS that <span>scales globally</span></h1>
+  <p>One codebase. Unlimited tenants. Self-serve onboarding. A marketplace that grows itself.<br>Software, marketplaces, and social networks — all in one platform.</p>
+  <div class="hero-btns">
+    <button class="btn btn-primary" onclick="scrollTo('signup-section')">Start for Free →</button>
+    <button class="btn btn-outline" onclick="showSection('marketplace')">Browse Marketplace</button>
+  </div>
+</div>
+
+<!-- LIVE PLATFORM STATS -->
+<div class="section" style="padding-top:0">
+  <div class="stats-bar" id="platform-stats">
+    <div class="stat"><div class="stat-num" id="stat-tenants">—</div><div class="stat-label">Active Tenants</div></div>
+    <div class="stat"><div class="stat-num" id="stat-messages">—</div><div class="stat-label">Messages Handled</div></div>
+    <div class="stat"><div class="stat-num" id="stat-plugins">6</div><div class="stat-label">Marketplace Plugins</div></div>
+    <div class="stat"><div class="stat-num" id="stat-knowledge">—</div><div class="stat-label">Knowledge Entries</div></div>
+  </div>
+</div>
+
+<!-- DEMO: CHAT + SIGNUP -->
+<div class="section">
+  <div class="cards cards-2">
+
+    <!-- CHAT -->
+    <div>
+      <div class="section-title"><div class="dot"></div> AI Chat Demo</div>
+      <div class="chat-demo">
+        <div class="chat-header">
+          <div class="chat-avatar">🤖</div>
+          <div>
+            <div class="chat-name">Aria — Support AI</div>
+            <div class="chat-status">● Online · Powered by Claude</div>
+          </div>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+          <div class="msg msg-bot">Hi! I'm Aria, your NovaSaaS support assistant. Ask me anything — plans, billing, setup, or troubleshooting. 👋</div>
+        </div>
+        <div class="chat-input-row">
+          <input class="chat-input" id="chat-input" placeholder="Ask anything..." onkeydown="if(event.key==='Enter') sendChat()">
+          <button class="chat-send" onclick="sendChat()">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIGNUP -->
+    <div id="signup-section">
+      <div class="section-title"><div class="dot"></div> Self-Serve Onboarding</div>
+      <div class="signup-form">
+        <div class="form-row">
+          <label class="form-label">Company name</label>
+          <input class="form-input" id="f-name" placeholder="Acme Corp">
+        </div>
+        <div class="form-row">
+          <label class="form-label">Slug (your unique subdomain)</label>
+          <input class="form-input" id="f-slug" placeholder="acme-corp" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'-')">
+        </div>
+        <div class="form-row">
+          <label class="form-label">Email</label>
+          <input class="form-input" id="f-email" type="email" placeholder="ceo@acme.com">
+        </div>
+        <div class="form-row">
+          <label class="form-label">Plan</label>
+          <select class="form-select" id="f-plan">
+            <option value="starter">Starter — Free</option>
+            <option value="pro" selected>Pro — $79/mo</option>
+            <option value="enterprise">Enterprise — Custom</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="doSignup()">Create My Platform →</button>
+        <div class="result-box" id="signup-result"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MARKETPLACE -->
+<div class="section" id="sec-marketplace" style="display:none">
+  <div class="section-title"><div class="dot"></div> Plugin Marketplace</div>
+  <div class="tabs">
+    <button class="tab active" onclick="filterPlugins('all',this)">All</button>
+    <button class="tab" onclick="filterPlugins('crm',this)">CRM</button>
+    <button class="tab" onclick="filterPlugins('communication',this)">Communication</button>
+    <button class="tab" onclick="filterPlugins('automation',this)">Automation</button>
+    <button class="tab" onclick="filterPlugins('analytics',this)">Analytics</button>
+    <button class="tab" onclick="filterPlugins('ai',this)">AI</button>
+  </div>
+  <div class="cards cards-3" id="plugin-grid"></div>
+</div>
+
+<!-- KNOWLEDGE COMMONS -->
+<div class="section" id="sec-knowledge" style="display:none">
+  <div class="section-title"><div class="dot"></div> Knowledge Commons</div>
+  <p style="color:var(--muted);font-size:.85rem;margin-bottom:1.5rem">Shared opt-in Q&A that gets smarter as more tenants contribute. Network effects built in.</p>
+
+  <div class="cards cards-2" style="margin-bottom:1.5rem">
+    <div class="signup-form">
+      <div class="section-title" style="font-size:1rem;margin-bottom:1rem"><div class="dot"></div> Contribute</div>
+      <div class="form-row">
+        <label class="form-label">Category</label>
+        <select class="form-select" id="k-cat">
+          <option value="support">Support</option>
+          <option value="sales">Sales</option>
+          <option value="onboarding">Onboarding</option>
+          <option value="technical">Technical</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Question</label>
+        <input class="form-input" id="k-q" placeholder="How do I reset my password?">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Answer</label>
+        <input class="form-input" id="k-a" placeholder="Go to Settings → Security...">
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="contributeKnowledge()">Contribute →</button>
+    </div>
+    <div>
+      <div class="section-title" style="font-size:1rem;margin-bottom:1rem"><div class="dot"></div> Search</div>
+      <div style="display:flex;gap:.5rem;margin-bottom:1rem">
+        <input class="form-input" id="k-search" placeholder="Search knowledge base..." style="flex:1">
+        <button class="btn btn-primary" onclick="searchKnowledge()">Search</button>
+      </div>
+      <div id="knowledge-results"></div>
+    </div>
+  </div>
+
+  <div class="section-title" style="font-size:1rem"><div class="dot"></div> Top Entries</div>
+  <div id="knowledge-list"></div>
+</div>
+
+<!-- ANALYTICS -->
+<div class="section" id="sec-analytics" style="display:none">
+  <div class="section-title"><div class="dot"></div> Platform Analytics</div>
+  <div class="metric-grid">
+    <div class="metric"><div class="metric-value metric-green" id="a-tenants">0</div><div class="metric-label">Active Tenants</div></div>
+    <div class="metric"><div class="metric-value metric-purple" id="a-msgs">0</div><div class="metric-label">Messages Handled</div></div>
+    <div class="metric"><div class="metric-value metric-orange" id="a-leads">0</div><div class="metric-label">Leads Captured</div></div>
+    <div class="metric"><div class="metric-value metric-green" id="a-plugins">6</div><div class="metric-label">Marketplace Plugins</div></div>
+    <div class="metric"><div class="metric-value metric-purple" id="a-knowledge">0</div><div class="metric-label">Knowledge Entries</div></div>
+    <div class="metric"><div class="metric-value metric-orange" id="a-cost">$0.00</div><div class="metric-label">Infra Cost / 1K msgs</div></div>
+  </div>
+
+  <div class="cards cards-2">
+    <div class="card">
+      <div class="card-header"><div class="card-icon">📈</div><div><div class="card-title">Cost Economics</div><div class="card-meta">Why this scales</div></div></div>
+      <div style="font-size:.85rem;color:var(--muted);line-height:1.8">
+        <div style="display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--border)"><span>AI cost per message</span><span style="color:var(--accent2)">~$0.0001</span></div>
+        <div style="display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--border)"><span>Infra cost per tenant</span><span style="color:var(--accent2)">~$0/mo</span></div>
+        <div style="display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--border)"><span>Support cost per message</span><span style="color:var(--accent2)">$0 (AI handles)</span></div>
+        <div style="display:flex;justify-content:space-between;padding:.4rem 0"><span>Break-even at</span><span style="color:var(--warning)">1 tenant</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-icon">🌐</div><div><div class="card-title">Scale Levers</div><div class="card-meta">Network effects</div></div></div>
+      <div style="font-size:.85rem;color:var(--muted);line-height:1.8">
+        <div style="display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--border)"><span>More tenants → Better knowledge</span><span style="color:var(--accent)">↑↑</span></div>
+        <div style="display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--border)"><span>More plugins → More revenue</span><span style="color:var(--accent)">↑↑</span></div>
+        <div style="display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--border)"><span>More data → Better AI</span><span style="color:var(--accent)">↑↑</span></div>
+        <div style="display:flex;justify-content:space-between;padding:.4rem 0"><span>Scales to</span><span style="color:var(--accent2)">∞ tenants</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PRICING -->
+<div class="section" id="sec-pricing" style="display:none">
+  <div class="section-title"><div class="dot"></div> Pricing</div>
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="price-name">STARTER</div>
+      <div class="price-amount">$29<span>/mo</span></div>
+      <ul class="price-features">
+        <li>1,000 messages/mo</li>
+        <li>100 leads captured</li>
+        <li>2 AI agents</li>
+        <li>3 marketplace plugins</li>
+        <li>Basic analytics</li>
+      </ul>
+      <button class="btn btn-outline" style="width:100%;margin-top:1.25rem" onclick="document.getElementById('f-plan').value='starter';showSection('demo');scrollTo('signup-section')">Get Started</button>
+    </div>
+    <div class="price-card featured">
+      <div class="price-name">PRO</div>
+      <div class="price-amount">$79<span>/mo</span></div>
+      <ul class="price-features">
+        <li>10,000 messages/mo</li>
+        <li>1,000 leads captured</li>
+        <li>5 AI agents</li>
+        <li>20 marketplace plugins</li>
+        <li>Knowledge commons access</li>
+        <li>Custom branding</li>
+      </ul>
+      <button class="btn btn-primary" style="width:100%;margin-top:1.25rem" onclick="document.getElementById('f-plan').value='pro';showSection('demo');scrollTo('signup-section')">Start Pro Trial</button>
+    </div>
+    <div class="price-card">
+      <div class="price-name">ENTERPRISE</div>
+      <div class="price-amount">Custom</div>
+      <ul class="price-features">
+        <li>Unlimited messages</li>
+        <li>Unlimited leads</li>
+        <li>Unlimited agents</li>
+        <li>All marketplace plugins</li>
+        <li>SLA + dedicated support</li>
+        <li>On-premise option</li>
+      </ul>
+      <button class="btn btn-outline" style="width:100%;margin-top:1.25rem">Contact Sales</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  Built with NovaSaaS AI OS · Near-zero marginal cost · Powered by Claude
+</footer>
+
+<script>
+// ── In-memory state (mirrors the real server) ─────────────────────────────────
+const state = {
+  tenants: [],
+  plugins: [
+    { id:'p1', slug:'hubspot-crm',         name:'HubSpot CRM',         category:'crm',           verified:true,  installs:412, rating:4.8, desc:'Sync leads to HubSpot automatically when captured.', icon:'🔗' },
+    { id:'p2', slug:'slack-notifications', name:'Slack Notifications',  category:'communication', verified:true,  installs:389, rating:4.9, desc:'Get Slack alerts on new leads & escalations.',          icon:'💬' },
+    { id:'p3', slug:'stripe-billing',      name:'Stripe Billing',       category:'automation',    verified:true,  installs:301, rating:4.7, desc:'Handle subscription & payment queries via AI.',         icon:'💳' },
+    { id:'p4', slug:'google-analytics',    name:'Google Analytics 4',   category:'analytics',     verified:true,  installs:278, rating:4.6, desc:'Track chat widget engagement events in GA4.',           icon:'📊' },
+    { id:'p5', slug:'openai-fallback',     name:'OpenAI Fallback',      category:'ai',            verified:true,  installs:194, rating:4.5, desc:'Route to GPT-4 for 99.99% uptime.',                    icon:'🤖' },
+    { id:'p6', slug:'zendesk-tickets',     name:'Zendesk Tickets',      category:'crm',           verified:false, installs:156, rating:4.3, desc:'Auto-create Zendesk tickets on escalation.',           icon:'🎫' },
+  ],
+  installedPlugins: new Set(),
+  knowledge: [
+    { id:'k1', category:'support',  q:'How do I reset my password?',           a:'Go to Settings → Security → Reset Password. You will receive an email within 2 minutes.',                    votes:42 },
+    { id:'k2', category:'billing',  q:'Can I upgrade my plan mid-month?',      a:'Yes! Upgrades are prorated. You only pay for the remaining days in your billing cycle.',                    votes:31 },
+    { id:'k3', category:'technical',q:'How do I embed the chat widget?',       a:'Add one script tag to your site: <script src="app.novasaas.ai/widget.js?key=YOUR_API_KEY"><\/script>',   votes:28 },
+    { id:'k4', category:'sales',    q:'What is the difference between plans?', a:'Starter is great for getting started. Pro unlocks the knowledge commons & custom branding. Enterprise adds SLAs.', votes:19 },
+  ],
+  messages: 247,
+  leads: 18,
+};
+
+const replies = {
+  pricing:  ['Our plans start at $29/mo (Starter), $79/mo (Pro), and custom Enterprise. Which fits your team? 💼', 'Pro plan gives you 10K messages/mo + knowledge commons access for $79. Want to start a trial?'],
+  support:  ["I can help with billing, troubleshooting, and account management. What's going on? 🛠️", "I'm on it! Can you share more details so I can pinpoint the issue?", "Got it. Most issues resolve in under 2 minutes. Let me walk you through it."],
+  sales:    ['Most teams see 3x faster response times after switching to NovaSaaS. Want a quick demo? 🚀', "I'd love to understand your workflow better. What's your biggest pain point right now?"],
+  embed:    ['Embedding is one line of HTML! Add this to your site:\n<script src="app.novasaas.ai/widget.js?key=YOUR_KEY"><\/script>'],
+  default:  ["Great question! Let me look that up for you. 🔍", "I'm Aria — I handle support. For sales questions, I'll loop in Sam. What else can I help with?", "On it! Give me a moment to check your account details."],
+};
+
+function aiReply(msg) {
+  const m = msg.toLowerCase();
+  if (m.includes('price') || m.includes('plan') || m.includes('cost') || m.includes('how much')) return rand(replies.pricing);
+  if (m.includes('embed') || m.includes('widget') || m.includes('install')) return rand(replies.embed);
+  if (m.includes('demo') || m.includes('trial') || m.includes('sign up')) return rand(replies.sales);
+  if (m.includes('help') || m.includes('issue') || m.includes('error') || m.includes('problem')) return rand(replies.support);
+  return rand(replies.default);
+}
+function rand(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+function uid() { return Math.random().toString(36).slice(2,10); }
+
+// ── Navigation ─────────────────────────────────────────────────────────────────
+function showSection(name) {
+  ['demo','marketplace','knowledge','analytics','pricing'].forEach(s => {
+    const el = document.getElementById('sec-'+s);
+    if (el) el.style.display = s === name ? '' : 'none';
+  });
+  document.querySelectorAll('.nav-pill').forEach(p => p.classList.toggle('active', p.textContent.toLowerCase().includes(name === 'demo' ? 'live' : name)));
+  if (name === 'marketplace') renderPlugins('all');
+  if (name === 'knowledge')   renderKnowledge();
+  if (name === 'analytics')   updateAnalytics();
+}
+
+function scrollTo(id) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── Stats ──────────────────────────────────────────────────────────────────────
+function updateStats() {
+  document.getElementById('stat-tenants').textContent  = state.tenants.length;
+  document.getElementById('stat-messages').textContent = state.messages + state.tenants.length * 3;
+  document.getElementById('stat-knowledge').textContent = state.knowledge.length;
+}
+updateStats();
+
+function updateAnalytics() {
+  document.getElementById('a-tenants').textContent   = state.tenants.length;
+  document.getElementById('a-msgs').textContent      = state.messages + state.tenants.length * 3;
+  document.getElementById('a-leads').textContent     = state.leads + state.tenants.length;
+  document.getElementById('a-knowledge').textContent = state.knowledge.length;
+  document.getElementById('a-cost').textContent      = '$0.10';
+}
+
+// ── Chat ──────────────────────────────────────────────────────────────────────
+function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  appendMsg(msg, 'user');
+  const typing = appendTyping();
+  setTimeout(() => {
+    typing.remove();
+    appendMsg(aiReply(msg), 'bot');
+    state.messages++;
+    updateStats();
+  }, 800 + Math.random()*600);
+}
+
+function appendMsg(text, who) {
+  const box = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = `msg msg-${who}`;
+  div.textContent = text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  return div;
+}
+
+function appendTyping() {
+  const box = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg msg-bot msg-typing';
+  div.innerHTML = '<div class="dot-pulse"></div><div class="dot-pulse"></div><div class="dot-pulse"></div>';
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  return div;
+}
+
+// ── Signup ────────────────────────────────────────────────────────────────────
+function doSignup() {
+  const name  = document.getElementById('f-name').value.trim()  || 'My Company';
+  const slug  = document.getElementById('f-slug').value.trim()  || 'my-company-' + uid();
+  const email = document.getElementById('f-email').value.trim() || 'demo@example.com';
+  const plan  = document.getElementById('f-plan').value;
+
+  if (state.tenants.some(t => t.slug === slug)) {
+    showResult('signup-result', `❌ Slug "${slug}" is already taken. Try another.`);
+    return;
+  }
+
+  const tenant = { id: uid(), slug, name, plan, email, api_key: Array.from({length:32},()=>Math.floor(Math.random()*16).toString(16)).join(''), created_at: new Date().toISOString() };
+  state.tenants.push(tenant);
+  state.installedPlugins = new Set();
+
+  const out = {
+    message: '🎉 Welcome to NovaSaaS! Your platform is ready.',
+    tenant: { id: tenant.id, name, slug, plan },
+    api_key: tenant.api_key,
+    quickstart: {
+      embed_widget: `<script src="https://app.novasaas.ai/widget.js?tenant=${slug}&key=${tenant.api_key}"><\/script>`,
+      next: `curl /api/tenants/me -H "x-api-key: ${tenant.api_key}"`
+    }
+  };
+  showResult('signup-result', JSON.stringify(out, null, 2));
+  updateStats();
+}
+
+function showResult(id, text) {
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  el.textContent = text;
+}
+
+// ── Marketplace ───────────────────────────────────────────────────────────────
+function renderPlugins(cat) {
+  const grid = document.getElementById('plugin-grid');
+  const list = cat === 'all' ? state.plugins : state.plugins.filter(p => p.category === cat);
+  grid.innerHTML = list.map(p => `
+    <div class="card plugin-card ${state.installedPlugins.has(p.slug)?'installed':''}" id="pc-${p.slug}">
+      <div class="card-header">
+        <div class="card-icon">${p.icon}</div>
+        <div>
+          <div class="card-title">${p.name} ${p.verified ? '<span class="badge badge-green">✓ Verified</span>' : '<span class="badge badge-orange">Pending</span>'}</div>
+          <div class="card-meta">${p.installs.toLocaleString()} installs · <span class="stars">${'★'.repeat(Math.round(p.rating))}${'☆'.repeat(5-Math.round(p.rating))}</span> ${p.rating}</div>
+        </div>
+      </div>
+      <div class="card-desc">${p.desc}</div>
+      <button class="install-btn ${state.installedPlugins.has(p.slug)?'installed':''}" onclick="installPlugin('${p.slug}')">
+        ${state.installedPlugins.has(p.slug) ? '✓ Installed' : '+ Install'}
+      </button>
+    </div>
+  `).join('');
+}
+
+function filterPlugins(cat, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderPlugins(cat);
+}
+
+function installPlugin(slug) {
+  if (state.installedPlugins.has(slug)) {
+    state.installedPlugins.delete(slug);
+  } else {
+    state.installedPlugins.add(slug);
+    const p = state.plugins.find(p=>p.slug===slug);
+    if (p) p.installs++;
+  }
+  renderPlugins('all');
+  document.querySelectorAll('.tab').forEach(t => { if(t.classList.contains('active')) { t.click(); } });
+}
+
+// ── Knowledge ─────────────────────────────────────────────────────────────────
+function renderKnowledge(list) {
+  const items = list || state.knowledge;
+  document.getElementById('knowledge-list').innerHTML = items.map(k => `
+    <div class="knowledge-entry">
+      <div class="knowledge-q">Q: ${k.q}</div>
+      <div class="knowledge-a">${k.a}</div>
+      <div class="knowledge-footer">
+        <span class="badge badge-purple">${k.category}</span>
+        <button class="upvote-btn" onclick="upvote('${k.id}')">▲ ${k.votes} helpful</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function contributeKnowledge() {
+  const q = document.getElementById('k-q').value.trim();
+  const a = document.getElementById('k-a').value.trim();
+  const cat = document.getElementById('k-cat').value;
+  if (!q || !a) return;
+  state.knowledge.unshift({ id: uid(), category: cat, q, a, votes: 0 });
+  document.getElementById('k-q').value = '';
+  document.getElementById('k-a').value = '';
+  renderKnowledge();
+  updateStats();
+}
+
+function searchKnowledge() {
+  const query = document.getElementById('k-search').value.toLowerCase();
+  const results = state.knowledge.filter(k => k.q.toLowerCase().includes(query) || k.a.toLowerCase().includes(query));
+  document.getElementById('knowledge-results').innerHTML = results.length
+    ? results.map(k => `<div class="knowledge-entry"><div class="knowledge-q">Q: ${k.q}</div><div class="knowledge-a">${k.a}</div></div>`).join('')
+    : '<p style="color:var(--muted);font-size:.85rem">No results found.</p>';
+}
+
+function upvote(id) {
+  const k = state.knowledge.find(k=>k.id===id);
+  if (k) { k.votes++; renderKnowledge(); }
+}
+</script>
+</body>
+</html>

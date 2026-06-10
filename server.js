@@ -14,9 +14,32 @@ const SupportAgent = require("./src/agents/SupportAgent");
 const SalesAgent = require("./src/agents/SalesAgent");
 const ManagerAgent = require("./src/agents/ManagerAgent");
 
+// Platform routes
+const tenantsRouter = require("./src/routes/tenants");
+const analyticsRouter = require("./src/routes/analytics");
+const { trackUsage } = require("./src/middleware/tenantAuth");
+
 const app = express();
 app.use(cors({ origin: process.env.FRONTEND_URL || "*" }));
 app.use(express.json());
+
+// Platform info endpoint
+app.get("/", (req, res) => {
+  res.json({
+    name: "NovaSaaS AI OS",
+    version: "1.0.0",
+    description: "Scalable multi-tenant AI platform — unlimited tenants, near-zero marginal cost",
+    endpoints: {
+      chat: "POST /api/chat",
+      leads: "POST /api/leads",
+      tenants: "/api/tenants",
+      analytics: "/api/analytics",
+      marketplace: "/api/tenants/marketplace",
+      knowledge: "/api/tenants/knowledge"
+    },
+    signup: "POST /api/tenants/signup"
+  });
+});
 
 // Initialize Supabase Client
 const db = createClient(
@@ -47,9 +70,15 @@ kernel.registerAgent(new SupportAgent());
 kernel.registerAgent(new SalesAgent());
 kernel.registerAgent(new ManagerAgent());
 
+// Mount platform routers
+app.use("/api/tenants", tenantsRouter);
+app.use("/api/analytics", analyticsRouter);
+
 // ── POST /api/chat ────────────────────────────────────────────────────────────
 app.post("/api/chat", async (req, res) => {
   const { messages, session_id } = req.body;
+  // Optional tenant identification via API key (demo mode if absent)
+  const apiKey = req.headers['x-api-key'] || req.query.api_key;
 
   if (!messages || !Array.isArray(messages) || !session_id) {
     return res.status(400).json({ error: "messages and session_id are required" });
@@ -64,6 +93,20 @@ app.post("/api/chat", async (req, res) => {
     const lastUserMsg = messages[messages.length - 1];
     await contextBroker.saveMessage(session_id, "user", lastUserMsg.content);
     await contextBroker.saveMessage(session_id, "assistant", reply);
+
+    // 3. Track usage if tenant API key provided
+    if (apiKey && result.usage) {
+      const tenantLookup = await db
+        .from('tenants')
+        .select('id')
+        .eq('api_key', apiKey)
+        .eq('is_active', true)
+        .single();
+      if (tenantLookup.data) {
+        const tokensUsed = (result.usage.input_tokens || 0) + (result.usage.output_tokens || 0);
+        trackUsage(tenantLookup.data.id, 'chat', tokensUsed).catch(() => {});
+      }
+    }
 
     res.json({ reply, agent: result.agent });
 
