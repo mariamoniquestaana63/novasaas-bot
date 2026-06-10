@@ -1102,18 +1102,40 @@ function toggleCreateInvoice() {
   form.classList.toggle('open');
 }
 
-function createInvoice() {
+async function createInvoice() {
   const patient = document.getElementById('inv-patient').value.trim();
   const service = document.getElementById('inv-service').value;
   const amount = parseFloat(document.getElementById('inv-amount').value);
   const due = document.getElementById('inv-due').value;
   if (!patient || !amount || !due) return;
+
   invoiceCounter++;
-  invoices.unshift({ id: 'NMC-0' + invoiceCounter, patient, service, amount, due, status: 'Pending' });
+  const invoice_number = 'NMC-0' + invoiceCounter;
+
+  // Optimistic local update
+  const localInv = { id: invoice_number, _id: null, patient, service, amount, due, status: 'Pending' };
+  state.invoices.unshift(localInv);
   document.getElementById('inv-patient').value = '';
   document.getElementById('inv-amount').value = '';
   document.getElementById('create-invoice-form').classList.remove('open');
   renderBilling();
+
+  // Persist to Supabase
+  const { data, error } = await db.from('clinic_invoices').insert({
+    invoice_number,
+    patient_name: patient,
+    service,
+    amount,
+    due_date: due,
+    status: 'Pending'
+  }).select().single();
+
+  if (error) {
+    console.error('Create invoice error:', error);
+  } else if (data) {
+    // Update the local record with the real DB id
+    localInv._id = data.id;
+  }
 }
 
 // =====================================================================
@@ -1218,9 +1240,9 @@ document.querySelectorAll('.modal-overlay').forEach(m => {
 });
 
 // =====================================================================
-// INIT
+// INIT — loads real data from Supabase then renders
 // =====================================================================
-(function init() {
+async function initApp() {
   // Set min date on booking form to today
   const today = new Date().toISOString().slice(0, 10);
   const bd = document.getElementById('b-date');
@@ -1229,8 +1251,80 @@ document.querySelectorAll('.modal-overlay').forEach(m => {
   if (fud) { fud.min = today; }
   const invd = document.getElementById('inv-due');
   if (invd) { invd.min = today; }
+
+  // Fetch all data in parallel
+  const [pRes, sRes, iRes, aRes] = await Promise.all([
+    db.from('clinic_patients').select('*').order('created_at', { ascending: false }),
+    db.from('clinic_staff').select('*').order('name'),
+    db.from('clinic_invoices').select('*').order('created_at', { ascending: false }),
+    db.from('clinic_appointments').select('*').order('appointment_date', { ascending: true })
+  ]);
+
+  // Populate patients — normalise field names for existing render code
+  if (!pRes.error && pRes.data) {
+    state.patients.length = 0;
+    const COLORS = ['#6c63ff','#00d4aa','#f5a623','#ff4d6d','#0099ff'];
+    pRes.data.forEach((p, i) => {
+      const initials = (p.name || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+      state.patients.push({
+        ...p,
+        initials,
+        blood: p.blood_type,
+        visits: [],       // will be loaded on-demand / via clinic_visits
+        upcoming: []      // will be loaded on-demand / via clinic_appointments
+      });
+    });
+  }
+
+  // Attach upcoming appointments to patients
+  if (!aRes.error && aRes.data) {
+    state.appointments.length = 0;
+    aRes.data.forEach(a => {
+      state.appointments.push(a);
+      const match = state.patients.find(p => p.id === a.patient_id);
+      if (match) {
+        match.upcoming.push({ date: a.appointment_date, time: a.time_slot, service: a.service });
+      }
+    });
+  }
+
+  // Populate staff — normalise for existing render code
+  if (!sRes.error && sRes.data) {
+    state.staff.length = 0;
+    const COLORS = ['#6c63ff','#00d4aa','#f5a623','#ff4d6d','#0099ff'];
+    sRes.data.forEach((s, i) => {
+      const initials = (s.name || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+      state.staff.push({
+        ...s,
+        initials,
+        color: COLORS[i % COLORS.length],
+        role: s.role || s.speciality || 'Staff'
+      });
+    });
+    staffMembers = state.staff;
+  }
+
+  // Populate invoices — normalise field names for existing render code
+  if (!iRes.error && iRes.data) {
+    state.invoices.length = 0;
+    iRes.data.forEach(inv => {
+      state.invoices.push({
+        ...inv,
+        _id: inv.id,          // keep DB id for updates
+        id: inv.invoice_number || inv.id,
+        patient: inv.patient_name,
+        due: inv.due_date,
+        amount: parseFloat(inv.amount) || 0
+      });
+    });
+    invoices = state.invoices;
+  }
+
+  // Re-render currently visible tab
   renderPatientList();
-})();
+}
+
+initApp();
 </script>
 </body>
 </html>
