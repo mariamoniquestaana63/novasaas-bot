@@ -508,11 +508,11 @@ nav { display: flex; align-items: center; justify-content: space-between; paddin
         <div class="form-group">
           <label>Service *</label>
           <select class="form-control" id="inv-service">
-            <option>General Consultation</option>
-            <option>Preventive Health Check</option>
-            <option>Chronic Disease Management</option>
-            <option>Specialist Referral</option>
-            <option>Pathology</option>
+            <option>Antenatal Appointment</option>
+            <option>Birth Plan Consultation</option>
+            <option>Postnatal Check</option>
+            <option>Lactation Support</option>
+            <option>Emergency Consultation</option>
           </select>
         </div>
         <div class="form-group">
@@ -556,27 +556,27 @@ nav { display: flex; align-items: center; justify-content: space-between; paddin
      ================================================================ -->
 <div id="tab-ai" class="tab-section">
   <div class="section-wrap">
-    <div class="section-title"><div class="dot"></div> AI Assistant — Dr. Nova</div>
+    <div class="section-title"><div class="dot"></div> AI Assistant — Mia — Midwifery Assistant</div>
     <div class="ai-layout">
       <div class="chat-wrap">
         <div class="chat-head">
           <div class="chat-avatar-ai">&#129302;</div>
           <div>
-            <div class="chat-ai-name">Dr. Nova</div>
-            <div class="chat-ai-status">&#9679; Online — Clinic AI</div>
+            <div class="chat-ai-name">Mia — Midwifery Assistant</div>
+            <div class="chat-ai-status">&#9679; Online — Midwifery AI</div>
           </div>
         </div>
         <div class="quick-chips" id="quick-chips">
           <span class="chip" onclick="sendChip('What services do you offer?')">Services</span>
           <span class="chip" onclick="sendChip('How do I book an appointment?')">Book Appointment</span>
-          <span class="chip" onclick="sendChip('I have a headache and fever')">Symptoms</span>
-          <span class="chip" onclick="sendChip('I need a prescription refill')">Prescription Refill</span>
+          <span class="chip" onclick="sendChip('What happens at my antenatal appointment?')">Antenatal Info</span>
+          <span class="chip" onclick="sendChip('How do I create a birth plan?')">Birth Plan</span>
           <span class="chip" onclick="sendChip('What are your hours?')">Opening Hours</span>
-          <span class="chip" onclick="sendChip('Show me patient Sarah Connor')">Find Patient</span>
+          <span class="chip" onclick="sendChip('Show me patient Sarah Mitchell')">Find Patient</span>
         </div>
         <div class="chat-messages" id="ai-messages"></div>
         <div class="chat-input-row">
-          <input id="ai-input" placeholder="Ask Dr. Nova anything…" onkeydown="if(event.key==='Enter')sendAIMessage()">
+          <input id="ai-input" placeholder="Ask Mia anything about your maternity journey…" onkeydown="if(event.key==='Enter')sendAIMessage()">
           <button class="btn btn-primary btn-sm" onclick="sendAIMessage()">Send</button>
         </div>
       </div>
@@ -593,18 +593,18 @@ nav { display: flex; align-items: center; justify-content: space-between; paddin
           </div>
         </div>
         <div class="ai-info-card">
-          <h3>&#9889; Dr. Nova Capabilities</h3>
+          <h3>&#9889; Mia's Capabilities</h3>
           <div class="ai-info-list">
             <div class="ai-info-item">&#128197; Book & check appointments</div>
             <div class="ai-info-item">&#128100; Look up patient records</div>
-            <div class="ai-info-item">&#128138; General health guidance</div>
+            <div class="ai-info-item">&#129382; Pregnancy milestone guidance</div>
             <div class="ai-info-item">&#128176; Billing enquiries</div>
-            <div class="ai-info-item">&#128140; Prescription reminders</div>
+            <div class="ai-info-item">&#128140; Birth plan & postnatal info</div>
           </div>
         </div>
         <div class="ai-info-card" style="background:rgba(108,99,255,.06);border-color:rgba(108,99,255,.3)">
           <h3>&#9888;&#65039; Medical Disclaimer</h3>
-          <p style="font-size:.76rem;color:var(--muted);line-height:1.7">Dr. Nova provides general health information only and does not constitute medical advice. Always consult a qualified healthcare professional for diagnosis and treatment.</p>
+          <p style="font-size:.76rem;color:var(--muted);line-height:1.7">Mia provides general maternity information only and does not constitute medical advice. Always consult a qualified midwife or healthcare professional for personalised guidance, diagnosis, and treatment.</p>
         </div>
       </div>
     </div>
@@ -710,99 +710,98 @@ let pendingCalSlot = null;
 
 const patients = [
   {
-    id: 1, name: "Eleanor Voss", dob: "1978-03-15", phone: "(555) 201-4477", email: "eleanor.voss@email.com",
-    blood: "A+", allergies: "Penicillin, Pollen", status: "Active",
-    initials: "EV",
+    id: 1, name: "Sarah Mitchell", dob: "1994-08-12", phone: "(555) 201-4477", email: "sarah.mitchell@email.com",
+    blood: "A+", allergies: "Penicillin", status: "Active",
+    initials: "SM",
     visits: [
-      { date: "2026-05-28", reason: "Hypertension review", doctor: "Dr. Patel", notes: "BP 138/88. Adjusted lisinopril to 10mg. Follow-up in 4 weeks." },
-      { date: "2026-03-10", reason: "Annual health check", doctor: "Dr. Kim", notes: "All bloods normal. BMI 27.2. Discussed diet and exercise." },
-      { date: "2025-11-20", reason: "Flu-like symptoms", doctor: "Dr. Patel", notes: "Viral URTi. Rest, fluids, paracetamol. No antibiotics." }
+      { date: "2026-05-28", reason: "32-week antenatal check", doctor: "Midwife Chen", notes: "Fundal height 32cm. Baby in cephalic position. BP normal. Iron levels borderline — dietary advice given." },
+      { date: "2026-04-14", reason: "28-week antenatal check", doctor: "Midwife Chen", notes: "GTT negative. All bloods satisfactory. Discussed birth plan preferences." },
+      { date: "2026-02-20", reason: "12-week booking appointment", doctor: "Midwife Torres", notes: "Dating scan confirmed 12+2. Blood panel taken. First trimester all normal." }
     ],
-    upcoming: [{ date: "2026-06-25", time: "10:00 AM", service: "Hypertension Review" }]
+    upcoming: [{ date: "2026-06-25", time: "10:00 AM", service: "36-week Antenatal Check" }]
   },
   {
-    id: 2, name: "Marcus Webb", dob: "1991-07-22", phone: "(555) 304-9912", email: "m.webb@gmail.com",
-    blood: "O+", allergies: "None known", status: "New",
-    initials: "MW",
+    id: 2, name: "Emma Clarke", dob: "1990-03-05", phone: "(555) 304-9912", email: "emma.clarke@gmail.com",
+    blood: "O+", allergies: "None known", status: "Active",
+    initials: "EC",
     visits: [
-      { date: "2026-06-01", reason: "Initial consultation", doctor: "Dr. Kim", notes: "New patient. Asthma history since childhood. Prescribed Salbutamol inhaler." }
+      { date: "2026-06-01", reason: "8-week postnatal check", doctor: "Midwife Torres", notes: "Good recovery post vaginal birth. Lochia resolved. Mood screening normal. Breastfeeding well established." },
+      { date: "2026-05-04", reason: "2-week postnatal visit", doctor: "Midwife Chen", notes: "Perineal wound healing well. Baby weight regained. Referred to lactation consultant for latch concerns." }
     ],
-    upcoming: [{ date: "2026-06-18", time: "11:00 AM", service: "Asthma Management" }]
+    upcoming: [{ date: "2026-06-18", time: "11:00 AM", service: "Postnatal Check" }]
   },
   {
-    id: 3, name: "Priya Sharma", dob: "1965-11-08", phone: "(555) 417-2230", email: "priya.sharma@work.com",
+    id: 3, name: "Priya Nair", dob: "1988-11-22", phone: "(555) 417-2230", email: "priya.nair@work.com",
     blood: "B+", allergies: "Sulfonamides", status: "At-Risk",
-    initials: "PS",
+    initials: "PN",
     visits: [
-      { date: "2026-05-15", reason: "Diabetes management", doctor: "Dr. Okafor", notes: "HbA1c 8.2% — poorly controlled. Intensified metformin. Dietary referral placed." },
-      { date: "2026-04-02", reason: "Foot inspection", doctor: "Dr. Okafor", notes: "No neuropathy signs. Good footwear advised." },
-      { date: "2026-01-10", reason: "Retinal screening referral", doctor: "Dr. Patel", notes: "Referred to ophthalmology. Annual check." }
+      { date: "2026-05-15", reason: "Gestational diabetes review", doctor: "Midwife Chen", notes: "GTT positive at 28 weeks. Dietary modifications initiated. Blood glucose monitoring commenced. Referred to obstetric team." },
+      { date: "2026-04-02", reason: "20-week anomaly scan referral", doctor: "Midwife Torres", notes: "Scan completed — no structural concerns. Placenta anterior, low-lying. Repeat scan at 32 weeks." }
     ],
-    upcoming: [{ date: "2026-06-12", time: "9:00 AM", service: "Diabetes Review" }]
+    upcoming: [{ date: "2026-06-12", time: "9:00 AM", service: "Antenatal Appointment" }]
   },
   {
-    id: 4, name: "James Calloway", dob: "1984-02-28", phone: "(555) 522-8873", email: "jcalloway@mail.com",
-    blood: "AB-", allergies: "Codeine", status: "Active",
-    initials: "JC",
+    id: 4, name: "Aisha Okonkwo", dob: "1996-06-14", phone: "(555) 522-8873", email: "aisha.okonkwo@mail.com",
+    blood: "AB-", allergies: "None known", status: "New",
+    initials: "AO",
     visits: [
-      { date: "2026-05-05", reason: "Lower back pain", doctor: "Dr. Kim", notes: "Mechanical LBP. Physio referral. Naproxen 500mg PRN." },
-      { date: "2026-02-14", reason: "Skin rash review", doctor: "Dr. Patel", notes: "Eczema flare. Betamethasone 0.1% cream. Avoid trigger soaps." }
+      { date: "2026-06-03", reason: "8-week booking appointment", doctor: "Midwife Torres", notes: "First pregnancy. Dating scan confirmed 8+3. All bloods taken. Discussed antenatal schedule and vitamin supplementation." }
     ],
-    upcoming: []
+    upcoming: [{ date: "2026-06-28", time: "10:00 AM", service: "12-week Antenatal Check" }]
   },
   {
-    id: 5, name: "Linda Tran", dob: "1972-09-14", phone: "(555) 614-3356", email: "linda.tran@hnet.com",
+    id: 5, name: "Linda Tran", dob: "1985-09-14", phone: "(555) 614-3356", email: "linda.tran@hnet.com",
     blood: "O-", allergies: "Aspirin, Latex", status: "Active",
     initials: "LT",
     visits: [
-      { date: "2026-06-03", reason: "Preventive health check", doctor: "Dr. Okafor", notes: "Cholesterol slightly elevated (LDL 3.4). Lifestyle advice. Repeat bloods in 3 months." },
-      { date: "2025-12-08", reason: "Cervical screening", doctor: "Dr. Kim", notes: "Pap smear normal. Next due 2028." }
+      { date: "2026-06-03", reason: "Lactation support session", doctor: "LC Morgan", notes: "Severe latch difficulty with 3-week-old. Tongue tie identified and referred for assessment. Supplementing with expressed milk in interim." },
+      { date: "2026-05-18", reason: "Postnatal home visit", doctor: "Midwife Chen", notes: "Day 5 postnatal. Caesarean wound clean and healing. Baby weight tracking well. Introduced breast pump." }
     ],
-    upcoming: [{ date: "2026-09-03", time: "2:00 PM", service: "Cholesterol Follow-up" }]
+    upcoming: [{ date: "2026-09-03", time: "2:00 PM", service: "Lactation Support" }]
   }
 ];
 
 let invoices = [
-  { id: "NMC-0091", patient: "Eleanor Voss", service: "Hypertension Review", amount: 95, due: "2026-05-30", status: "Paid" },
-  { id: "NMC-0092", patient: "Marcus Webb", service: "General Consultation", amount: 85, due: "2026-06-10", status: "Pending" },
-  { id: "NMC-0093", patient: "Priya Sharma", service: "Chronic Disease Management", amount: 115, due: "2026-05-20", status: "Overdue" },
-  { id: "NMC-0094", patient: "James Calloway", service: "General Consultation", amount: 85, due: "2026-06-01", status: "Paid" },
-  { id: "NMC-0095", patient: "Linda Tran", service: "Preventive Health Check", amount: 120, due: "2026-06-15", status: "Pending" },
-  { id: "NMC-0096", patient: "Priya Sharma", service: "Pathology", amount: 60, due: "2026-05-15", status: "Overdue" },
-  { id: "NMC-0097", patient: "Eleanor Voss", service: "Annual Health Check", amount: 120, due: "2026-06-20", status: "Pending" },
-  { id: "NMC-0098", patient: "James Calloway", service: "Physiotherapy Referral", amount: 75, due: "2026-06-08", status: "Paid" }
+  { id: "NMC-0091", patient: "Sarah Mitchell", service: "Antenatal Appointment", amount: 95, due: "2026-05-30", status: "Paid" },
+  { id: "NMC-0092", patient: "Emma Clarke", service: "Postnatal Check", amount: 85, due: "2026-06-10", status: "Pending" },
+  { id: "NMC-0093", patient: "Priya Nair", service: "Antenatal Appointment", amount: 115, due: "2026-05-20", status: "Overdue" },
+  { id: "NMC-0094", patient: "Aisha Okonkwo", service: "Antenatal Appointment", amount: 85, due: "2026-06-01", status: "Paid" },
+  { id: "NMC-0095", patient: "Linda Tran", service: "Lactation Support", amount: 90, due: "2026-06-15", status: "Pending" },
+  { id: "NMC-0096", patient: "Priya Nair", service: "Birth Plan Consultation", amount: 120, due: "2026-05-15", status: "Overdue" },
+  { id: "NMC-0097", patient: "Sarah Mitchell", service: "Birth Plan Consultation", amount: 120, due: "2026-06-20", status: "Pending" },
+  { id: "NMC-0098", patient: "Emma Clarke", service: "Lactation Support", amount: 90, due: "2026-06-08", status: "Paid" }
 ];
 
 let invoiceCounter = 99;
 
 const staffMembers = [
-  { name: "Dr. Arjun Patel", role: "General Practitioner", status: "In Consultation", color: "#6c63ff", initials: "AP" },
-  { name: "Dr. Ji-Yeon Kim", role: "General Practitioner", status: "Available", color: "#00d4aa", initials: "JK" },
-  { name: "Dr. Emeka Okafor", role: "Chronic Disease Specialist", status: "Available", color: "#f5a623", initials: "EO" },
-  { name: "Nurse Rachel Torres", role: "Registered Nurse", status: "Off", color: "#ff4d6d", initials: "RT" }
+  { name: "Midwife Sophie Chen", role: "Lead Midwife", status: "In Consultation", color: "#6c63ff", initials: "SC" },
+  { name: "Midwife Ana Torres", role: "Antenatal Specialist", status: "Available", color: "#00d4aa", initials: "AT" },
+  { name: "LC Bridget Morgan", role: "Lactation Consultant", status: "Available", color: "#f5a623", initials: "BM" },
+  { name: "Nurse Isla Reid", role: "Postnatal Nurse", status: "Off", color: "#ff4d6d", initials: "IR" }
 ];
 
 const calendarEvents = {
-  "Mon-9": [{ label: "Eleanor Voss — BP Review", color: "" }],
-  "Mon-10": [{ label: "Marcus Webb — Asthma", color: "green" }],
-  "Mon-14": [{ label: "Linda Tran — Cholesterol", color: "green" }],
-  "Tue-9": [{ label: "Priya Sharma — Diabetes", color: "orange" }],
-  "Tue-11": [{ label: "New Patient Intake", color: "" }],
-  "Wed-10": [{ label: "James Calloway — Back Pain", color: "" }],
-  "Wed-14": [{ label: "Annual Checks ×3", color: "green" }],
-  "Thu-9": [{ label: "Walk-in Clinic", color: "orange" }],
-  "Thu-15": [{ label: "Telehealth Session", color: "" }],
+  "Mon-9": [{ label: "Sarah Mitchell — 36wk Antenatal", color: "" }],
+  "Mon-10": [{ label: "Emma Clarke — Postnatal Check", color: "green" }],
+  "Mon-14": [{ label: "Linda Tran — Lactation Support", color: "green" }],
+  "Tue-9": [{ label: "Priya Nair — Antenatal Review", color: "orange" }],
+  "Tue-11": [{ label: "New Patient Booking", color: "" }],
+  "Wed-10": [{ label: "Aisha Okonkwo — 12wk Antenatal", color: "" }],
+  "Wed-14": [{ label: "Antenatal Classes ×3", color: "green" }],
+  "Thu-9": [{ label: "Birth Plan Consultations", color: "orange" }],
+  "Thu-15": [{ label: "Telehealth Postnatal", color: "" }],
   "Fri-11": [{ label: "Staff Meeting", color: "orange" }],
-  "Fri-14": [{ label: "Priya Sharma — Follow-up", color: "orange" }]
+  "Fri-14": [{ label: "Priya Nair — Follow-up", color: "orange" }]
 };
 
 const tasks = [
-  { text: "Review Priya Sharma's HbA1c results", priority: "High", done: false },
-  { text: "Send referral letter to ophthalmology", priority: "High", done: false },
-  { text: "Confirm tomorrow's appointments", priority: "Medium", done: true },
-  { text: "Update immunisation records", priority: "Low", done: false },
+  { text: "Review Priya Nair's gestational diabetes glucose log", priority: "High", done: false },
+  { text: "Send tongue-tie referral letter for Linda Tran's baby", priority: "High", done: false },
+  { text: "Confirm tomorrow's antenatal appointments", priority: "Medium", done: true },
+  { text: "Update postnatal care records for Emma Clarke", priority: "Low", done: false },
   { text: "Process insurance claims batch", priority: "Medium", done: false },
-  { text: "Restock examination room supplies", priority: "Low", done: true }
+  { text: "Restock examination room and birth kit supplies", priority: "Low", done: true }
 ];
 
 // =====================================================================
@@ -948,7 +947,7 @@ function saveNote() {
   const text = document.getElementById('note-text').value.trim();
   if (!text || !selectedPatientId) { closeModal('add-note-modal'); return; }
   const p = patients.find(x => x.id === selectedPatientId);
-  p.visits.unshift({ date: new Date().toISOString().slice(0,10), reason: "Clinical Note", doctor: "Dr. Patel", notes: text });
+  p.visits.unshift({ date: new Date().toISOString().slice(0,10), reason: "Clinical Note", doctor: "Midwife Chen", notes: text });
   closeModal('add-note-modal');
   document.getElementById('note-text').value = '';
   renderPatientDetail(p);
@@ -1127,18 +1126,20 @@ function createInvoice() {
 // TAB 5 — AI ASSISTANT
 // =====================================================================
 const AI_RESPONSES = {
-  services: "Nova Medical Centre offers three core services:\n\n• **General Consultation** — $85, 30 min. Same-day appointments available.\n• **Preventive Health Check** — $120, 60 min. Full blood panel & cardiovascular assessment.\n• **Chronic Disease Management** — $95, 45 min. Ongoing care plans for diabetes, hypertension, asthma and more.\n\nShall I help you book one?",
-  hours: "We're open:\n\n• Mon – Fri: 8:00 AM – 6:00 PM\n• Saturday: 9:00 AM – 1:00 PM\n• Sunday: Closed\n\nFor after-hours emergencies, please call 000 (AU) or 911 (US) or visit your nearest emergency department.",
-  book: "Booking is easy! Head to the **Website** tab and fill in the booking form — choose your preferred service, date, and time. You'll receive a confirmation reference number instantly.\n\nAlternatively, call us at (555) 012-3456 and our team will assist you.",
-  prescription: "For prescription refills, please book a General Consultation so your doctor can review your current medications and health status. This ensures your prescriptions are safe and up-to-date.\n\n⚠️ We cannot issue refills without a clinical review for patient safety.",
-  billing: "For billing enquiries:\n\n• View your invoice in the **Billing** tab\n• Payments are accepted by card, bank transfer, or in-person\n• Medicare rebates apply for eligible consultations\n• Payment plans available — ask our reception\n\nNeed a specific invoice reference? Let me know your name.",
-  symptoms_general: "I'm sorry to hear you're not feeling well. While I can't diagnose conditions, here are some general reminders:\n\n• Stay hydrated and rest\n• Monitor your temperature\n• If symptoms are severe, sudden, or worsening — seek emergency care immediately\n• For persistent symptoms lasting >3 days, book a General Consultation\n\n⚠️ *This is not medical advice. Please consult a qualified doctor for diagnosis.*",
+  services: "Nova Midwifery Centre offers four core services:\n\n• **Antenatal Care** — $85, 30 min. Regular pregnancy check-ups and monitoring.\n• **Birth Planning** — $120, 60 min. Personalised birth plan sessions.\n• **Postnatal Support** — $95, 45 min. Recovery check-ups and newborn assessments.\n• **Lactation Consulting** — $90, 45 min. Expert breastfeeding support.\n\nShall I help you book one?\n\n⚠️ *This is general information only — not medical advice. Please consult your midwife for personalised care.*",
+  hours: "We're open:\n\n• Mon – Fri: 8:00 AM – 6:00 PM\n• Saturday: 9:00 AM – 1:00 PM\n• Sunday: Closed\n\nFor after-hours maternity emergencies, please call 000 (AU) or 911 (US) or go to your nearest maternity unit.",
+  book: "Booking is easy! Head to the **Website** tab and fill in the booking form — choose your preferred service (Antenatal Appointment, Birth Plan Consultation, Postnatal Check, Lactation Support, or Emergency Consultation), date, and time. You'll receive a confirmation reference number instantly.\n\nAlternatively, call us at (555) 012-3456 and our team will assist you.",
+  antenatal: "Antenatal appointments are regular check-ups throughout your pregnancy. Typically you'll have:\n\n• **8–12 weeks** — Booking appointment, bloods, dating scan\n• **16 weeks** — Routine check, discuss results\n• **20 weeks** — Anomaly scan\n• **28 weeks** — GTT (gestational diabetes test), anti-D if needed\n• **32–36 weeks** — Growth monitoring, birth plan discussions\n• **38–41 weeks** — Weekly checks until birth\n\n⚠️ *This is general information only — not medical advice. Your midwife will tailor your schedule to your individual needs.*",
+  birthplan: "A birth plan is a document outlining your preferences for labour and birth. It can include:\n\n• Your preferred pain relief options (e.g. gas, epidural, water birth)\n• Who you want as your birth support partner\n• Your preferences for monitoring and intervention\n• Skin-to-skin and cord clamping preferences\n• What matters most to you in your birth experience\n\nWe offer a dedicated **Birth Plan Consultation** to work through this together.\n\n⚠️ *This is general guidance only — always discuss your plan with your midwife for personalised advice.*",
+  postnatal: "Postnatal recovery is different for everyone. General milestones include:\n\n• **Days 1–5** — Midwife home visits, lochia monitoring, wound checks\n• **Week 2** — Baby weight check, feeding support\n• **Week 6–8** — Full postnatal check for mum and baby\n• **Ongoing** — Emotional wellbeing, contraception, return to activity\n\nIf you have concerns about your recovery at any time, please contact us or seek urgent care.\n\n⚠️ *This is general information only — not medical advice. Please consult your midwife or GP for personalised care.*",
+  billing: "For billing enquiries:\n\n• View your invoice in the **Billing** tab\n• Payments are accepted by card, bank transfer, or in-person\n• Medicare rebates may apply for eligible consultations\n• Payment plans available — ask our reception\n\nNeed a specific invoice reference? Let me know your name.",
+  symptoms_general: "I'm sorry to hear you're not feeling well during your pregnancy or postnatal recovery. While I can't diagnose conditions, please be aware:\n\n• If you experience heavy bleeding, severe abdominal pain, reduced fetal movements, or signs of infection — seek emergency care immediately\n• For general concerns, book an antenatal or postnatal check\n• Stay hydrated and rest as able\n\n⚠️ *This is not medical advice. Please always consult your midwife or a qualified healthcare professional — especially during pregnancy or the postnatal period.*",
   location: "We're located at:\n\n📍 **142 Wellness Ave, Suite 4**\n\nThere's ample parking on-site and we're a 5-minute walk from Central Station. Wheelchair accessible entrance available.",
-  default: "Thanks for your question! I'm Dr. Nova, your clinic AI assistant. I can help with:\n\n• Appointment booking info\n• Our services & fees\n• Opening hours & location\n• General health guidance (not advice)\n• Billing enquiries\n• Looking up patient records (staff only)\n\nHow can I assist you today?"
+  default: "Thanks for your question! I'm **Mia**, the midwifery AI assistant for Nova Midwifery Centre. I can help with:\n\n• Antenatal appointment information and booking\n• Pregnancy milestones and what to expect\n• Birth plan guidance\n• Postnatal recovery information\n• Lactation support queries\n• Opening hours & location\n• Billing enquiries\n• Looking up patient records (staff only)\n\n⚠️ *Please remember — I provide general information only, not medical advice. Always consult your midwife or healthcare professional for personalised care.*\n\nHow can I assist you today?"
 };
 
 function initChat() {
-  appendBotMsg("Hello! I'm **Dr. Nova**, the AI assistant for Nova Medical Centre. 👋\n\nHow can I help you today? You can ask about our services, book an appointment, or get general health information.");
+  appendBotMsg("Hello! I'm **Mia**, the midwifery AI assistant for Nova Midwifery Centre. 👋\n\nHow can I help you today? You can ask about antenatal care, birth planning, postnatal recovery, lactation support, or how to book an appointment.\n\n⚠️ *Please note: I provide general information only — not medical advice. Always consult your midwife or healthcare professional for personalised care.*");
 }
 
 function appendBotMsg(text) {
@@ -1191,13 +1192,17 @@ function sendAIMessage() {
       response = AI_RESPONSES.services;
     } else if (lower.includes('hour') || lower.includes('open') || lower.includes('close') || lower.includes('time')) {
       response = AI_RESPONSES.hours;
+    } else if (lower.includes('birth plan') || lower.includes('birthplan') || lower.includes('birth prefer')) {
+      response = AI_RESPONSES.birthplan;
+    } else if (lower.includes('antenatal') || lower.includes('ante natal') || lower.includes('pregnancy') || lower.includes('trimester') || lower.includes('weeks pregnant') || lower.includes('scan')) {
+      response = AI_RESPONSES.antenatal;
+    } else if (lower.includes('postnatal') || lower.includes('post natal') || lower.includes('after birth') || lower.includes('recovery') || lower.includes('postpartum')) {
+      response = AI_RESPONSES.postnatal;
     } else if (lower.includes('book') || lower.includes('appoint') || lower.includes('schedule')) {
       response = AI_RESPONSES.book;
-    } else if (lower.includes('prescription') || lower.includes('refill') || lower.includes('medication') || lower.includes('repeat')) {
-      response = AI_RESPONSES.prescription;
     } else if (lower.includes('bill') || lower.includes('invoice') || lower.includes('pay') || lower.includes('cost') || lower.includes('fee') || lower.includes('price')) {
       response = AI_RESPONSES.billing;
-    } else if (lower.includes('symptom') || lower.includes('pain') || lower.includes('headache') || lower.includes('fever') || lower.includes('sick') || lower.includes('hurt') || lower.includes('cough') || lower.includes('tired')) {
+    } else if (lower.includes('symptom') || lower.includes('pain') || lower.includes('bleed') || lower.includes('fever') || lower.includes('sick') || lower.includes('hurt') || lower.includes('movement') || lower.includes('tired')) {
       response = AI_RESPONSES.symptoms_general;
     } else if (lower.includes('location') || lower.includes('address') || lower.includes('where') || lower.includes('directions')) {
       response = AI_RESPONSES.location;
