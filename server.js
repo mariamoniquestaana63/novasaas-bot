@@ -10,9 +10,8 @@ const Kernel = require("./src/os-core/Kernel");
 const ContextBroker = require("./src/os-core/ContextBroker");
 const Blackboard = require("./src/os-core/Blackboard");
 const MCPToolGateway = require("./src/tools/MCPToolGateway");
-const SupportAgent = require("./src/agents/SupportAgent");
-const SalesAgent = require("./src/agents/SalesAgent");
-const ManagerAgent = require("./src/agents/ManagerAgent");
+const fs = require("fs");
+const path = require("path");
 
 /**
  * Creates and configures the Express application.
@@ -119,9 +118,13 @@ if (require.main === module) {
   kernel.setContextBroker(contextBroker);
   kernel.setBlackboard(blackboard);
   kernel.setToolGateway(toolGateway);
-  kernel.registerAgent(new SupportAgent());
-  kernel.registerAgent(new SalesAgent());
-  kernel.registerAgent(new ManagerAgent());
+  const agentsDir = path.join(__dirname, "src/agents");
+  fs.readdirSync(agentsDir).forEach(file => {
+    if (file.endsWith(".js") && file !== "BaseAgent.js") {
+      const AgentClass = require(path.join(agentsDir, file));
+      kernel.registerAgent(new AgentClass());
+    }
+  });
 
   const app = createApp(kernel, contextBroker, db);
   const PORT = process.env.PORT || 3001;

@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Nexus AI OS Executable DAG Schema",
+  "description": "JSON schema for validating inter-agent task plans and execution DAGs",
+  "type": "OBJECT",
+  "properties": {
+    "tasks": {
+      "type": "ARRAY",
+      "description": "The flat list of sub-tasks forming a Directed Acyclic Graph (DAG)",
+      "items": {
+        "type": "OBJECT",
+        "required": ["id", "description", "assigned_to", "dependencies"],
+        "properties": {
+          "id": {
+            "type": "STRING",
+            "description": "Unique identifier for the task, e.g. A1, task_1"
+          },
+          "description": {
+            "type": "STRING",
+            "description": "Clear imperative description of the task objective"
+          },
+          "assigned_to": {
+            "type": "STRING",
+            "description": "The exact class name of the specialized agent assigned to execute this task"
+          },
+          "dependencies": {
+            "type": "ARRAY",
+            "description": "List of task IDs that must be completed before this task can start",
+            "items": {
+              "type": "STRING"
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": ["tasks"]
+}

@@ -1,0 +1,142 @@
+{
+  "tasks": [
+    {
+      "id": "A1",
+      "description": "Conduct market attractiveness scoring for EU and MENA, evaluating TAM, growth, competition, and CAC/LTV assumptions.",
+      "assigned_to": "MarketIntelligenceAgent",
+      "dependencies": []
+    },
+    {
+      "id": "A2",
+      "description": "Define Ideal Customer Profile (ICP) segmentation by region (enterprise/mid-market, target industries) for EU and MENA.",
+      "assigned_to": "MarketIntelligenceAgent",
+      "dependencies": ["A1"]
+    },
+    {
+      "id": "A3",
+      "description": "Formulate entry mode recommendations (direct sales vs. partners vs. hybrid) for EU and MENA regions.",
+      "assigned_to": "MarketIntelligenceAgent",
+      "dependencies": ["A2"]
+    },
+    {
+      "id": "B1",
+      "description": "Perform regulatory landscape review covering GDPR, data residency, AI Act implications, and local labor/tax constraints in EU and MENA.",
+      "assigned_to": "ComplianceAgent",
+      "dependencies": []
+    },
+    {
+      "id": "B2",
+      "description": "Adapt contracts and terms (DPA, MSA, privacy policies) for regional compliance and clauses.",
+      "assigned_to": "LegalOpsAgent",
+      "dependencies": ["B1"]
+    },
+    {
+      "id": "B3",
+      "description": "Establish a risk register with owner, severity, and mitigation plans covering legal, security, reputational, and operational risks.",
+      "assigned_to": "RiskAuditAgent",
+      "dependencies": ["B1"]
+    },
+    {
+      "id": "C1",
+      "description": "Define localization scope including language, UX, onboarding, and support flows for EU and MENA.",
+      "assigned_to": "ProductLocalizationAgent",
+      "dependencies": ["A2"]
+    },
+    {
+      "id": "C2",
+      "description": "Perform regional integration compatibility checks for payment processing, identity, and communication APIs.",
+      "assigned_to": "IntegrationAgent",
+      "dependencies": ["C1"]
+    },
+    {
+      "id": "C3",
+      "description": "Validate system reliability and SLA constraints (latency, uptime expectations) for the new regions.",
+      "assigned_to": "IntegrationAgent",
+      "dependencies": ["C2"]
+    },
+    {
+      "id": "D1",
+      "description": "Establish regional pricing models using currency, willingness-to-pay, and competitor benchmarking.",
+      "assigned_to": "PricingStrategyAgent",
+      "dependencies": ["A1", "A2", "E1"]
+    },
+    {
+      "id": "D2",
+      "description": "Simulate unit economics (gross margin, support burden, payback periods, sensitivity analysis) under regional pricing models.",
+      "assigned_to": "FinanceModelingAgent",
+      "dependencies": ["D1"]
+    },
+    {
+      "id": "D3",
+      "description": "Draft final packaging decision memo detailing product tiers, add-ons, and discount policies.",
+      "assigned_to": "PricingStrategyAgent",
+      "dependencies": ["D2"]
+    },
+    {
+      "id": "E1",
+      "description": "Draft messaging architecture defining persona-level value propositions and launch positioning.",
+      "assigned_to": "GTMStrategistAgent",
+      "dependencies": ["A2"]
+    },
+    {
+      "id": "E2",
+      "description": "Develop demand generation plan specifying channel mix, campaign calendar, and budget allocation.",
+      "assigned_to": "GTMStrategistAgent",
+      "dependencies": ["A2", "B1"]
+    },
+    {
+      "id": "E3",
+      "description": "Create sales enablement assets including regional battlecards, objection handling playbooks, and discovery scripts.",
+      "assigned_to": "SalesEnablementAgent",
+      "dependencies": ["A2", "B1", "E1"]
+    },
+    {
+      "id": "E4",
+      "description": "Shortlist local partner/channel opportunities and design outreach campaigns.",
+      "assigned_to": "PartnershipsAgent",
+      "dependencies": ["A3"]
+    },
+    {
+      "id": "HITL_Gate",
+      "description": "Mandatory Go/No-Go Launch Approval Gate. Review all strategy, compliance, risk, localization, economics, and GTM outputs.",
+      "assigned_to": "HumanApprovalAgent",
+      "dependencies": ["B2", "B3", "C3", "D3", "E2", "E3", "E4"]
+    },
+    {
+      "id": "F1",
+      "description": "Synthesize the final Launch Runbook detailing owners, timeline, cross-functional cutover checklists, and dependencies.",
+      "assigned_to": "LaunchOpsAgent",
+      "dependencies": ["HITL_Gate"]
+    },
+    {
+      "id": "F2",
+      "description": "Assess and build customer support readiness, including localized knowledge base, escalation paths, and support SLAs.",
+      "assigned_to": "LaunchOpsAgent",
+      "dependencies": ["HITL_Gate"]
+    },
+    {
+      "id": "F3",
+      "description": "Instrument KPIs for regional telemetry (pipeline, conversion rates, retention, CAC) in the production environment.",
+      "assigned_to": "RevOpsAnalyticsAgent",
+      "dependencies": ["F1", "F2"]
+    },
+    {
+      "id": "G1",
+      "description": "Conduct 30-day post-launch performance review using regional KPI and telemetry outputs.",
+      "assigned_to": "RevOpsAnalyticsAgent",
+      "dependencies": ["F3"]
+    },
+    {
+      "id": "G2",
+      "description": "Perform root-cause analysis for any missed performance targets or process gaps identified in the 30-day review.",
+      "assigned_to": "RevOpsAnalyticsAgent",
+      "dependencies": ["G1"]
+    },
+    {
+      "id": "G3",
+      "description": "Replan the product backlog and launch schedule for Iteration 2 optimization.",
+      "assigned_to": "ManagerAgent",
+      "dependencies": ["G2"]
+    }
+  ]
+}
