@@ -1,0 +1,173 @@
+{
+  "agent_contracts": {
+    "MarketIntelligenceAgent": {
+      "role": "Market Intelligence Specialist",
+      "description": "Responsible for conducting TAM estimation, competitor intelligence, and ideal customer segment definitions.",
+      "input_schema": {
+        "regions": ["EU", "MENA"],
+        "focus": "TAM, growth, competition, customer profile"
+      },
+      "expected_outputs": {
+        "TAM_estimations": "Numerical TAM range per region",
+        "competitor_landscape": "Key local players and their positioning",
+        "ICP_definitions": "Enterprise vs mid-market segment breakdown"
+      }
+    },
+    "ComplianceAgent": {
+      "role": "Compliance & Regulatory Officer",
+      "description": "Responsible for legal, regulatory, data residency, and tax constraint identification across target regions.",
+      "input_schema": {
+        "regions": ["EU", "MENA"],
+        "regulations": ["GDPR", "AI Act", "local data residency"]
+      },
+      "expected_outputs": {
+        "compliance_requirements": "Key compliance directives per region",
+        "barriers_to_entry": "Legal risks or tax/labor blockers"
+      }
+    },
+    "LegalOpsAgent": {
+      "role": "Legal Operations Specialist",
+      "description": "Responsible for drafting, adapting, and redlining key customer and partner agreements (DPA, MSA, Privacy Policies).",
+      "input_schema": {
+        "regulatory_landscape": "Output from ComplianceAgent"
+      },
+      "expected_outputs": {
+        "DPA_redline": "Adapted Data Processing Agreement",
+        "MSA_clauses": "Regional clauses for Master Services Agreement",
+        "privacy_policy_update": "GDPR/local privacy updates"
+      }
+    },
+    "RiskAuditAgent": {
+      "role": "Risk & Assurance Auditor",
+      "description": "Independently stress-tests launch plans, creates the risk register, and monitors mitigation statuses.",
+      "input_schema": {
+        "strategy_and_compliance_inputs": "Outputs from MarketIntelligenceAgent and ComplianceAgent"
+      },
+      "expected_outputs": {
+        "risk_register": "Table of legal, security, operational, and reputational risks with owner, severity, and mitigation plan"
+      }
+    },
+    "ProductLocalizationAgent": {
+      "role": "Product Localization Specialist",
+      "description": "Defines localization scope across UI translation, UX flows, and help documentation.",
+      "input_schema": {
+        "ICP_segmentation": "Output from MarketIntelligenceAgent"
+      },
+      "expected_outputs": {
+        "localization_spec": "Language, UX localizations, and onboarding adaptation list"
+      }
+    },
+    "IntegrationAgent": {
+      "role": "Technical Integration Engineer",
+      "description": "Verifies technical dependencies including regional payments, SMS gateways, identity providers, and SLAs.",
+      "input_schema": {
+        "localization_spec": "Output from ProductLocalizationAgent"
+      },
+      "expected_outputs": {
+        "payment_compatibility": "Payment processor recommendation (Adyen, local cards, etc.)",
+        "SLA_validation": "Latency and uptime projections per region"
+      }
+    },
+    "PricingStrategyAgent": {
+      "role": "Pricing & Packaging Strategist",
+      "description": "Formulates willingness-to-pay models, pricing tiers, and packaging options per region.",
+      "input_schema": {
+        "TAM_estimations": "Output from MarketIntelligenceAgent",
+        "competitor_landscape": "Output from MarketIntelligenceAgent"
+      },
+      "expected_outputs": {
+        "pricing_model": "Multi-region pricing tiers and currency rules",
+        "packaging_memo": "Packaging tiers, add-ons, and discount policies"
+      }
+    },
+    "FinanceModelingAgent": {
+      "role": "Financial Modeler & Analyst",
+      "description": "Simulates financial unit economics, gross margins, CAC/LTV, and payback periods.",
+      "input_schema": {
+        "pricing_model": "Output from PricingStrategyAgent"
+      },
+      "expected_outputs": {
+        "unit_economics": "Projected gross margins and CAC payback periods",
+        "sensitivity_analysis": "Scenario outputs for low/med/high adoption"
+      }
+    },
+    "GTMStrategistAgent": {
+      "role": "Go-To-Market Strategist",
+      "description": "Establishes persona messaging architecture, channel strategies, budget allocations, and launch timing.",
+      "input_schema": {
+        "ICP_segmentation": "Output from MarketIntelligenceAgent"
+      },
+      "expected_outputs": {
+        "messaging_architecture": "Value proposition per regional persona",
+        "demand_generation_plan": "Channel mix, calendar, and budget allocations"
+      }
+    },
+    "ContentOpsAgent": {
+      "role": "Content Operations Specialist",
+      "description": "Creates region-specific, localized GTM copywriting and campaign assets.",
+      "input_schema": {
+        "messaging_architecture": "Output from GTMStrategistAgent"
+      },
+      "expected_outputs": {
+        "localized_assets": "Copywriting templates, email sequences, and social assets"
+      }
+    },
+    "SalesEnablementAgent": {
+      "role": "Sales Enablement Specialist",
+      "description": "Produces region-specific playbooks, battlecards, and script templates for local sales teams.",
+      "input_schema": {
+        "messaging_architecture": "Output from GTMStrategistAgent"
+      },
+      "expected_outputs": {
+        "sales_battlecards": "Competitor-specific battlecards",
+        "discovery_scripts": "Region-specific discovery call scripts"
+      }
+    },
+    "PartnershipsAgent": {
+      "role": "Strategic Partnerships Manager",
+      "description": "Sources, ranks, and coordinates outreach plans for local channel/distributor partners.",
+      "input_schema": {
+        "entry_mode": "Output from MarketIntelligenceAgent"
+      },
+      "expected_outputs": {
+        "partner_shortlist": "Ranked local partner options",
+        "outreach_plan": "Partner-specific outreach template and approach"
+      }
+    },
+    "HumanApprovalAgent": {
+      "role": "Human Approval HITL Proxy",
+      "description": "Simulates executive and compliance sign-off at critical gates.",
+      "input_schema": {
+        "risk_register": "Output from RiskAuditAgent",
+        "DPA_redline": "Output from LegalOpsAgent",
+        "packaging_memo": "Output from PricingStrategyAgent"
+      },
+      "expected_outputs": {
+        "approval_status": "APPROVED or REJECTED",
+        "signoff_comments": "Formal go/no-go signoff and executive feedback"
+      }
+    },
+    "LaunchOpsAgent": {
+      "role": "Launch Operations Specialist",
+      "description": "Orchestrates launch runbooks, cross-functional timelines, and customer support readiness checklists.",
+      "input_schema": {
+        "approval_status": "APPROVED from HumanApprovalAgent"
+      },
+      "expected_outputs": {
+        "launch_runbook": "Consolidated launch steps, owners, and timelines",
+        "support_readiness": "Knowledge base, SLA mappings, and escalation flows"
+      }
+    },
+    "RevOpsAnalyticsAgent": {
+      "role": "Revenue Operations & Analytics Engineer",
+      "description": "Instruments KPI tracking schemas, builds post-launch dashboards, and conducts 30-day reviews with root-cause analysis.",
+      "input_schema": {
+        "launch_runbook": "Output from LaunchOpsAgent"
+      },
+      "expected_outputs": {
+        "kpi_schema": "Telemetry configurations for pipeline, conversion, and retention",
+        "performance_review": "30-day telemetry evaluation and root-cause analysis"
+      }
+    }
+  }
+}
