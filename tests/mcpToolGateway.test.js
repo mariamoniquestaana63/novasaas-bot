@@ -72,6 +72,19 @@ describe('MCPToolGateway.connectStdio', () => {
     await expect(gw.connectStdio('badServer', 'bad-cmd', [])).rejects.toThrow('connection refused');
   });
 
+  it('handles a tools response missing the tools field', async () => {
+    const gw = new MCPToolGateway();
+    const mockClient = {
+      connect: jest.fn().mockResolvedValue(undefined),
+      listTools: jest.fn().mockResolvedValue({}),
+      callTool: jest.fn(),
+    };
+    Client.mockImplementationOnce(() => mockClient);
+
+    await expect(gw.connectStdio('srv', 'cmd', [])).resolves.toBeUndefined();
+    expect(gw.listAvailableTools()).toHaveLength(0);
+  });
+
   it('handles a server that returns no tools gracefully', async () => {
     const gw = new MCPToolGateway();
     const mockClient = {
@@ -125,5 +138,12 @@ describe('MCPToolGateway.callTool', () => {
 
     await gw.connectStdio('srv', 'cmd', []);
     await expect(gw.callTool('failing_tool', {})).rejects.toThrow('tool execution error');
+  });
+
+  it('throws when the tool is registered but its client is missing', async () => {
+    const gw = new MCPToolGateway();
+    gw.tools.set('orphan_tool', { serverName: 'ghostServer', name: 'orphan_tool' });
+
+    await expect(gw.callTool('orphan_tool', {})).rejects.toThrow('Client for server ghostServer not found');
   });
 });

@@ -176,6 +176,63 @@ describe('ContextBroker.checkPaging', () => {
   });
 });
 
+describe('ContextBroker.pageContext', () => {
+  it('does nothing when there are no old messages to page', async () => {
+    const db = makeDb();
+    db._builder.limit.mockResolvedValueOnce({ data: [], error: null });
+
+    const broker = new ContextBroker(db);
+    await broker.pageContext('sess1');
+
+    expect(db._builder.insert).not.toHaveBeenCalled();
+  });
+
+  it('does nothing when the query for old messages errors', async () => {
+    const db = makeDb();
+    db._builder.limit.mockResolvedValueOnce({ data: null, error: { message: 'fail' } });
+
+    const broker = new ContextBroker(db);
+    await expect(broker.pageContext('sess1')).resolves.toBeUndefined();
+    expect(db._builder.insert).not.toHaveBeenCalled();
+  });
+
+  it('embeds and stores each old message in agent_memory', async () => {
+    const db = makeDb();
+    const oldMessages = [
+      { id: '1', role: 'user', content: 'old msg 1' },
+      { id: '2', role: 'assistant', content: 'old msg 2' },
+    ];
+    db._builder.limit.mockResolvedValueOnce({ data: oldMessages, error: null });
+    db._builder.insert.mockResolvedValue({ error: null });
+
+    const broker = new ContextBroker(db);
+    jest.spyOn(broker, 'generateEmbedding').mockResolvedValue([0.1, 0.2]);
+
+    await broker.pageContext('sess1');
+
+    expect(db.from).toHaveBeenCalledWith('agent_memory');
+    expect(db._builder.insert).toHaveBeenCalledWith([
+      expect.objectContaining({ session_id: 'sess1', content: '[user] old msg 1', embedding: [0.1, 0.2] })
+    ]);
+    expect(db._builder.insert).toHaveBeenCalledTimes(2);
+  });
+
+  it('logs and continues when storing a memory fails', async () => {
+    const db = makeDb();
+    const oldMessages = [{ id: '1', role: 'user', content: 'old msg' }];
+    db._builder.limit.mockResolvedValueOnce({ data: oldMessages, error: null });
+    db._builder.insert.mockResolvedValueOnce({ error: { message: 'insert failed' } });
+
+    const broker = new ContextBroker(db);
+    jest.spyOn(broker, 'generateEmbedding').mockResolvedValue([0.1]);
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    await expect(broker.pageContext('sess1')).resolves.toBeUndefined();
+    expect(errorSpy).toHaveBeenCalledWith('[ContextBroker] Error storing memory:', 'insert failed');
+    errorSpy.mockRestore();
+  });
+});
+
 describe('ContextBroker.generateEmbedding', () => {
   it('returns a 1536-element array', async () => {
     const broker = new ContextBroker(makeDb());
@@ -194,6 +251,17 @@ describe('ContextBroker.searchMemories', () => {
   it('returns empty array when RPC throws', async () => {
     const db = makeDb();
     db.rpc = jest.fn().mockRejectedValue(new Error('rpc fail'));
+
+    const broker = new ContextBroker(db);
+    jest.spyOn(broker, 'generateEmbedding').mockResolvedValue(new Array(1536).fill(0));
+
+    const result = await broker.searchMemories('sess1', 'query');
+    expect(result).toEqual([]);
+  });
+
+  it('returns empty array when RPC resolves with an error', async () => {
+    const db = makeDb();
+    db.rpc = jest.fn().mockResolvedValue({ data: null, error: { message: 'rpc error' } });
 
     const broker = new ContextBroker(db);
     jest.spyOn(broker, 'generateEmbedding').mockResolvedValue(new Array(1536).fill(0));

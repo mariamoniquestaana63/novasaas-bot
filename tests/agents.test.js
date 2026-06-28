@@ -221,4 +221,66 @@ describe('ManagerAgent', () => {
     expect(taskAssignmentCalls).toHaveLength(1);
     expect(taskAssignmentCalls[0][0].payload.id).toBe('t1');
   });
+
+  it('run() proceeds normally when an active plan already exists on the blackboard', async () => {
+    const plan = { tasks: [] };
+    const a = new ManagerAgent();
+    const kernel = makeKernel(JSON.stringify(plan));
+    const mockBlackboard = {
+      getHistory: jest.fn().mockResolvedValue([{ type: 'plan', status: 'active' }]),
+      post: jest.fn().mockResolvedValue({ id: '1' }),
+    };
+    kernel.blackboard = mockBlackboard;
+
+    const result = await a.run(kernel, { messages: [{ role: 'user', content: 'continue' }] }, { session_id: 's1' });
+
+    expect(mockBlackboard.getHistory).toHaveBeenCalledWith('s1');
+    expect(result.agent).toBe('ManagerAgent');
+  });
+
+  it('run() returns raw text when parsed JSON has no tasks array', async () => {
+    const a = new ManagerAgent();
+    const rawJson = JSON.stringify({ status: 'no plan needed' });
+    const kernel = makeKernel(rawJson);
+    const input = { messages: [{ role: 'user', content: 'just a quick question' }] };
+
+    const result = await a.run(kernel, input, { session_id: 's1' });
+
+    expect(result.reply).toBe(rawJson);
+    expect(result.agent).toBe('ManagerAgent');
+  });
+});
+
+describe('ManagerAgent.handleBlackboardEvent', () => {
+  it('logs when a result event is received', async () => {
+    const a = new ManagerAgent();
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+    await expect(
+      a.handleBlackboardEvent({}, { session_id: 's1', type: 'result', payload: { ok: true } })
+    ).resolves.toBeUndefined();
+
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Received result for session s1'));
+    logSpy.mockRestore();
+  });
+
+  it('logs an error when an error event is received', async () => {
+    const a = new ManagerAgent();
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const payload = { message: 'task failed' };
+
+    await expect(
+      a.handleBlackboardEvent({}, { session_id: 's1', type: 'error', payload })
+    ).resolves.toBeUndefined();
+
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Received error for session s1'), payload);
+    errorSpy.mockRestore();
+  });
+
+  it('does nothing for unrecognised event types', async () => {
+    const a = new ManagerAgent();
+    await expect(
+      a.handleBlackboardEvent({}, { session_id: 's1', type: 'other', payload: {} })
+    ).resolves.toBeUndefined();
+  });
 });
