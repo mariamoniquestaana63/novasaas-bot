@@ -98,6 +98,22 @@ describe('Kernel.route', () => {
   });
 });
 
+describe('Kernel setters', () => {
+  it('setBlackboard stores the blackboard instance', () => {
+    const k = new Kernel();
+    const blackboard = { post: jest.fn() };
+    k.setBlackboard(blackboard);
+    expect(k.blackboard).toBe(blackboard);
+  });
+
+  it('setToolGateway stores the tool gateway instance', () => {
+    const k = new Kernel();
+    const gateway = { callTool: jest.fn() };
+    k.setToolGateway(gateway);
+    expect(k.toolGateway).toBe(gateway);
+  });
+});
+
 describe('Kernel.callLLM', () => {
   it('forwards params to anthropic and returns response', async () => {
     const k = new Kernel();
@@ -187,5 +203,31 @@ describe('Kernel.dispatch', () => {
       m => m.role === sharedMsg.role && m.content === sharedMsg.content
     ).length;
     expect(count).toBe(1);
+  });
+
+  it('builds messages from input.text when input.messages is absent', async () => {
+    const k = new Kernel();
+    const historyMsg = { role: 'user', content: 'previous' };
+    const mockBroker = { getContext: jest.fn().mockResolvedValue([historyMsg]) };
+    k.setContextBroker(mockBroker);
+
+    const agent = makeAgent('SupportAgent');
+    agent.run.mockResolvedValue({ reply: 'ok', agent: 'SupportAgent' });
+    k.registerAgent(agent);
+
+    await k.dispatch({ text: 'hello there' }, { session_id: 's1' });
+
+    const callArg = agent.run.mock.calls[0][1];
+    expect(callArg.messages).toEqual([historyMsg, { role: 'user', content: 'hello there' }]);
+  });
+
+  it('routes and dispatches using an empty default text when input has neither text nor messages', async () => {
+    const k = new Kernel();
+    const agent = makeAgent('SupportAgent');
+    agent.run.mockResolvedValue({ reply: 'ok', agent: 'SupportAgent' });
+    k.registerAgent(agent);
+
+    const result = await k.dispatch({}, {});
+    expect(result).toEqual({ reply: 'ok', agent: 'SupportAgent' });
   });
 });
